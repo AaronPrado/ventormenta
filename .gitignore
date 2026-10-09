@@ -221,3 +221,6 @@ __marimo__/
 
 # Configuración local del asistente (no se versiona)
 .claude/
+
+# Databricks
+.databricks/
