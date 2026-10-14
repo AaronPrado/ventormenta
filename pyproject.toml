@@ -1,0 +1,45 @@
+[project]
+name = "ventormenta"
+version = "0.1.0"
+description = "Reconstrucción y predicción D+1 de la generación eólica programada en Galicia, en Databricks."
+license = "GPL-3.0-only"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff==0.17.0",
+]
+
+[tool.uv]
+required-version = ">=0.13.1"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle (errores)
+    "W",   # pycodestyle (avisos)
+    "F",   # pyflakes
+    "I",   # orden de imports
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+    "C4",  # flake8-comprehensions
+    "RUF", # reglas propias de ruff
+    "PT",  # flake8-pytest-style
+    "DTZ", # fechas sin zona horaria: la corrección temporal depende de que no existan
+    "S",   # flake8-bandit: p. ej., peticiones HTTP sin timeout a las fuentes
+    "ANN", # anotaciones de tipos
+]
+
+[tool.ruff.lint.per-file-ignores]
+# En los tests, assert es la herramienta (S101) y lanzar git es legítimo (S603, S607).
+"tests/**" = ["S101", "S603", "S607"]
+
+[tool.pytest]
+minversion = "9.0"
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers", "--strict-config", "--import-mode=importlib"]
