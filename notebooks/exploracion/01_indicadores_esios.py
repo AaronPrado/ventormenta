@@ -66,9 +66,7 @@ def fetch_indicator(
     try:
         return response.json()["indicator"]
     except (ValueError, KeyError) as err:
-        raise ValueError(
-            f"e·sios, indicador {indicator_id}: respuesta inesperada"
-        ) from err
+        raise ValueError(f"e·sios, indicador {indicator_id}: respuesta inesperada") from err
 
 
 def summarize_by_day(
@@ -101,13 +99,9 @@ def summarize_by_day(
 
 def print_metadata(indicator: dict[str, Any]) -> None:
     """Imprime todos los metadatos del indicador (sin valores) y su descripción en texto plano."""
-    metadata = {
-        k: v for k, v in indicator.items() if k not in ("values", "description")
-    }
+    metadata = {k: v for k, v in indicator.items() if k not in ("values", "description")}
     print(json.dumps(metadata, ensure_ascii=False, indent=2, default=str))
-    description = re.sub(
-        r"<[^>]+>", " ", html.unescape(indicator.get("description") or "")
-    )
+    description = re.sub(r"<[^>]+>", " ", html.unescape(indicator.get("description") or ""))
     print("Descripción:", " ".join(description.split()))
 
 
@@ -121,9 +115,7 @@ tomorrow = today + timedelta(days=1)
 start = local_midnight(today - timedelta(days=1))
 end = local_midnight(today + timedelta(days=2)) - timedelta(seconds=1)
 
-print(
-    f"Captura: {captured_at.isoformat()} · {captured_at.astimezone(MADRID).isoformat()}"
-)
+print(f"Captura: {captured_at.isoformat()} · {captured_at.astimezone(MADRID).isoformat()}")
 print(f"Rango pedido: {start.isoformat()} → {end.isoformat()}")
 
 for position, indicator_id in enumerate(INDICATORS):
