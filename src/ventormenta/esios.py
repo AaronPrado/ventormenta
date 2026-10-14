@@ -18,6 +18,9 @@ USER_AGENT = "VenTormenta/0.1"
 ACCEPT = "application/json; application/vnd.esios-api-v1+json"
 TIMEOUT_SECONDS = 30
 
+# Granularidad nativa de cada indicador sin time_trunc (caracterización en docs/fuentes-esios.md).
+NATIVE_STEPS = {541: timedelta(minutes=15), 1777: timedelta(hours=1)}
+
 Clock = Callable[[], datetime]
 
 
