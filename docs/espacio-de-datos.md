@@ -79,7 +79,49 @@ Por ejemplo, una captura del 541 hecha a las 11:30 hora peninsular del 14 de oct
   fichero.
 - **La hora de captura también va dentro del fichero.** Es el `available_at` de la
   instantánea (clase observada, diseño §7.1), y la fecha de modificación del fichero no
-  sirve para eso. El formato del fichero se define con el job de instantáneas.
+  sirve para eso. El formato es el sobre descrito abajo.
+
+### Formato de las instantáneas (sobre JSON, `format_version` 1)
+
+Cada fichero es un sobre JSON en UTF-8 que guarda la respuesta de e·sios **literal**, sin
+parsear, junto con los datos de la captura. Lo escribe `ventormenta.snapshots`.
+
+```json
+{
+  "format_version": 1,
+  "source": "esios",
+  "indicator_id": 541,
+  "target_date": "2026-10-15",
+  "request": {
+    "method": "GET",
+    "url": "https://api.esios.ree.es/indicators/541",
+    "params": {"start_date": "2026-10-15T00:00:00+02:00", "end_date": "2026-10-15T23:59:59+02:00"}
+  },
+  "requested_at": "2026-10-14T09:05:00.123456+00:00",
+  "received_at": "2026-10-14T09:05:02.654321+00:00",
+  "response": {
+    "status_code": 200,
+    "server_date": "Wed, 14 Oct 2026 09:05:01 GMT",
+    "body_sha256": "…",
+    "body_encoding": "utf-8",
+    "body": "{\"indicator\": {…}}"
+  }
+}
+```
+
+- **`target_date`** es el día D pedido, en hora peninsular; la petición cubre ese día
+  completo (23, 24 o 25 horas).
+- **`received_at`** (UTC) es el `available_at` de la instantánea: se toma cuando ya ha
+  llegado el cuerpo entero, así que nunca es anterior al momento en que se tuvo el dato.
+  La ruta del fichero usa este mismo instante. `server_date` es la cabecera `Date` de
+  e·sios, para contrastar con su reloj.
+- **`body`** es el cuerpo tal como llegó. Se guarda como texto y no como objeto porque
+  parsearlo y volver a serializarlo cambiaría los bytes (formato de los números,
+  espacios). `body_sha256` es el hash de esos bytes, comprobable con el propio fichero. Si
+  el cuerpo no fuera UTF-8 válido, iría en base64 con `body_encoding: "base64"`.
+- **Sin cabeceras de la petición:** llevan el token de e·sios.
+- **`format_version`** sube si cambia la estructura del sobre, para que la capa bronze
+  sepa cómo leer cada fichero.
 
 ## Cómo se crean
 
