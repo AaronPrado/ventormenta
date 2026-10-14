@@ -2,8 +2,8 @@
 
 Dónde guarda VenTormenta sus datos en Unity Catalog y cómo se organizan los ficheros
 crudos. Los objetos se definen en [`infra/unity_catalog.sql`](../infra/unity_catalog.sql);
-la arquitectura completa está en [el diseño](ventormenta-presentacion.md) (§8.1–8.2 y
-§14).
+la arquitectura completa y las licencias de las fuentes están en
+[el diseño](ventormenta-presentacion.md).
 
 ## Objetos
 
@@ -36,12 +36,11 @@ Se añadirán cuando llegue su ingesta o su fase:
   [almacenamiento por defecto](https://docs.databricks.com/aws/en/storage/default-storage):
   - solo el cómputo serverless puede leerlo;
   - los clientes externos pueden acceder a sus Volumes con la Files API, que es la vía
-    del vigilante de GitHub Actions (diseño §8.2).
+    del vigilante de GitHub Actions.
 
   Borrar un Volume gestionado borra también sus ficheros: la protección frente a
   pérdidas es la copia privada de las instantáneas, no Unity Catalog.
-- **Un Volume por fuente.** Cada fuente tiene su licencia y sus condiciones (diseño
-  §14): los crudos de Red Eléctrica no se redistribuyen, Open-Meteo es CC BY 4.0 y
+- **Un Volume por fuente.** Cada fuente tiene su licencia y sus condiciones: los crudos de Red Eléctrica no se redistribuyen, Open-Meteo es CC BY 4.0 y
   OpenStreetMap es ODbL, con los derivados aparte. Separarlas por Volume mantiene esa
   frontera y permite dar a cada credencial acceso solo a lo que necesita.
 - **Nombres en inglés**, como el código y las columnas bitemporales (`valid_time`,
@@ -78,8 +77,50 @@ Por ejemplo, una captura del 541 hecha a las 11:30 hora peninsular del 14 de oct
 - **Inmutables.** Un fichero no se sobrescribe nunca: repetir una captura crea otro
   fichero.
 - **La hora de captura también va dentro del fichero.** Es el `available_at` de la
-  instantánea (clase observada, diseño §7.1), y la fecha de modificación del fichero no
-  sirve para eso. El formato del fichero se define con el job de instantáneas.
+  instantánea (clase de disponibilidad observada), y la fecha de modificación del fichero no
+  sirve para eso. El formato es el sobre descrito abajo.
+
+### Formato de las instantáneas (sobre JSON, `format_version` 1)
+
+Cada fichero es un sobre JSON en UTF-8 que guarda la respuesta de e·sios **literal**, sin
+parsear, junto con los datos de la captura. Lo escribe `ventormenta.snapshots`.
+
+```json
+{
+  "format_version": 1,
+  "source": "esios",
+  "indicator_id": 541,
+  "target_date": "2026-10-15",
+  "request": {
+    "method": "GET",
+    "url": "https://api.esios.ree.es/indicators/541",
+    "params": {"start_date": "2026-10-15T00:00:00+02:00", "end_date": "2026-10-15T23:59:59+02:00"}
+  },
+  "requested_at": "2026-10-14T09:05:00.123456+00:00",
+  "received_at": "2026-10-14T09:05:02.654321+00:00",
+  "response": {
+    "status_code": 200,
+    "server_date": "Wed, 14 Oct 2026 09:05:01 GMT",
+    "body_sha256": "…",
+    "body_encoding": "utf-8",
+    "body": "{\"indicator\": {…}}"
+  }
+}
+```
+
+- **`target_date`** es el día D pedido, en hora peninsular; la petición cubre ese día
+  completo (23, 24 o 25 horas).
+- **`received_at`** (UTC) es el `available_at` de la instantánea: se toma cuando ya ha
+  llegado el cuerpo entero, así que nunca es anterior al momento en que se tuvo el dato.
+  La ruta del fichero usa este mismo instante. `server_date` es la cabecera `Date` de
+  e·sios, para contrastar con su reloj.
+- **`body`** es el cuerpo tal como llegó. Se guarda como texto y no como objeto porque
+  parsearlo y volver a serializarlo cambiaría los bytes (formato de los números,
+  espacios). `body_sha256` es el hash de esos bytes, comprobable con el propio fichero. Si
+  el cuerpo no fuera UTF-8 válido, iría en base64 con `body_encoding: "base64"`.
+- **Sin cabeceras de la petición:** llevan el token de e·sios.
+- **`format_version`** sube si cambia la estructura del sobre, para que la capa bronze
+  sepa cómo leer cada fichero.
 
 ## Cómo se crean
 
