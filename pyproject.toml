@@ -6,6 +6,10 @@ license = "GPL-3.0-only"
 requires-python = ">=3.12,<3.13"
 dependencies = []
 
+[build-system]
+requires = ["uv_build>=0.13.1,<0.14"]
+build-backend = "uv_build"
+
 [dependency-groups]
 dev = [
     # Versión exacta en las herramientas cuyo veredicto puede cambiar de una versión a otra.
@@ -46,7 +50,7 @@ select = [
 [tool.mypy]
 strict = true
 # Los notebooks quedan fuera: dependen de globales de Databricks como dbutils.
-files = ["tests"]
+files = ["src", "tests"]
 
 [tool.pytest]
 minversion = "9.0"
