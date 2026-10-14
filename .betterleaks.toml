@@ -1,0 +1,14 @@
+# Reglas de betterleaks: las de serie más las propias del proyecto.
+[extend]
+useDefault = true
+
+# El token de e·sios son 64 caracteres hexadecimales, la misma forma que un SHA-256.
+# Por eso se exige el contexto de e·sios delante, como en las reglas de serie para tokens
+# de 64 caracteres: así no salta con los hashes que sí se versionan (uv.lock, binarios
+# fijados en la CI). Las asignaciones genéricas (token = ..., api_key = ...) las cubre
+# la regla de serie generic-api-key.
+[[rules]]
+id = "esios-api-token"
+description = "Token personal de la API de e·sios"
+regex = '''(?i)(?:e·?sios|x-api-key)(?:[ \t\w.-]{0,20})[\s'"]{0,3}(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60'"\s=]{0,5}([a-f0-9]{64})(?:\\?['"\x60]|[\s;]|\\[nr]|$)'''
+keywords = ["sios", "x-api-key"]
