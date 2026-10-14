@@ -1,0 +1,59 @@
+resources:
+  jobs:
+    esios_snapshots:
+      name: esios_snapshots
+      description: >-
+        Instantánea diaria de las previsiones eólicas 541 y 1777 de e·sios para el día D,
+        capturada a las 11:00 peninsulares de D-1, antes del corte de las 12:00.
+
+      # En hora peninsular: el corte lo es, y así la hora sigue los cambios de hora.
+      # Sin pause_status: en prod queda activa por defecto y el modo development la pausa
+      # en dev (ponerla UNPAUSED aquí activaría también la copia de dev).
+      schedule:
+        quartz_cron_expression: "0 0 11 * * ?"
+        timezone_id: Europe/Madrid
+
+      max_concurrent_runs: 1
+      # Corta la ejecución hacia las 12:00: una captura posterior al corte ya no sirve para el D.
+      timeout_seconds: 3600
+
+      # Una tarea por indicador: un reintento solo repite la petición que falló.
+      # Encadenadas para que las dos peticiones no coincidan; la segunda corre aunque falle la primera.
+      # Presupuesto: 2 peticiones al día y, con 3 reintentos por tarea, 8 como máximo.
+      tasks:
+        - task_key: esios_1777
+          notebook_task:
+            notebook_path: ../notebooks/jobs/esios_snapshot.py
+            base_parameters:
+              indicator_id: "1777"
+              volume_root: ${var.esios_volume_root}
+          environment_key: default
+          # La auto-optimización serverless añade reintentos sin número ni intervalo
+          # documentados; cada uno sería una petición más a e·sios.
+          disable_auto_optimization: true
+          max_retries: 3
+          min_retry_interval_millis: 600000
+          timeout_seconds: 900
+
+        - task_key: esios_541
+          depends_on:
+            - task_key: esios_1777
+          run_if: ALL_DONE
+          notebook_task:
+            notebook_path: ../notebooks/jobs/esios_snapshot.py
+            base_parameters:
+              indicator_id: "541"
+              volume_root: ${var.esios_volume_root}
+          environment_key: default
+          disable_auto_optimization: true
+          max_retries: 3
+          min_retry_interval_millis: 600000
+          timeout_seconds: 900
+
+      environments:
+        - environment_key: default
+          spec:
+            # Entorno 6: Python 3.12.3, como exige requires-python.
+            environment_version: "6"
+            dependencies:
+              - ../dist/*.whl

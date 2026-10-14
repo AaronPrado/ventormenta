@@ -1,0 +1,45 @@
+# Bundle de VenTormenta: jobs y código del proyecto. Los datos crudos (catálogo, esquema y
+# Volumes de `raw`) quedan fuera a propósito: se crean con infra/unity_catalog.sql, para que
+# un despliegue o un `bundle destroy` no pueda borrar instantáneas que no se pueden volver a pedir.
+bundle:
+  name: ventormenta
+
+include:
+  - resources/*.yml
+
+artifacts:
+  ventormenta:
+    type: whl
+    build: uv build --wheel
+    # Cambia la versión del wheel en cada despliegue: con una versión fija, el entorno
+    # serverless podría reutilizar un paquete anterior ya instalado.
+    dynamic_version: true
+
+variables:
+  esios_volume_root:
+    description: Raíz del Volume con las respuestas crudas de e·sios.
+    default: /Volumes/ventormenta/raw/esios
+
+# Sin `workspace.host`: lo da el perfil de la CLI (DATABRICKS_CONFIG_PROFILE), que es de
+# cada máquina y no se versiona.
+targets:
+  dev:
+    # Prefija los recursos con «[dev usuario]» y pausa sus programaciones: se puede
+    # desplegar y lanzar a mano sin dejar un job pidiendo a e·sios cada día.
+    mode: development
+    default: true
+
+  prod:
+    mode: production
+    # Solo se despliega a producción lo que ya está en main.
+    git:
+      branch: main
+    workspace:
+      # En la carpeta de quien despliega, no en Shared: el código que lee el secreto de
+      # e·sios y escribe en raw no debe poder modificarlo cualquier usuario del workspace.
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+    run_as:
+      user_name: ${workspace.current_user.userName}
+    permissions:
+      - user_name: ${workspace.current_user.userName}
+        level: CAN_MANAGE
