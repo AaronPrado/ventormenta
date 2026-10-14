@@ -16,10 +16,11 @@ setup: ## Crea el entorno con uv e instala los hooks de git
 	uv sync --locked
 	$(UV_RUN) prek install
 
-lint: ## Comprueba formato, lint y tipos sin modificar ficheros
+lint: ## Comprueba formato, lint, tipos y workflows sin modificar ficheros
 	$(UV_RUN) ruff format --check .
 	$(UV_RUN) ruff check .
 	$(UV_RUN) mypy
+	$(UV_RUN) zizmor --no-progress --strict-collection .
 
 test: ## Ejecuta los tests
 	$(UV_RUN) pytest
