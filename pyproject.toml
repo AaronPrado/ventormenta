@@ -4,7 +4,11 @@ version = "0.1.0"
 description = "Reconstrucción y predicción D+1 de la generación eólica programada en Galicia, en Databricks."
 license = "GPL-3.0-only"
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    # El entorno serverless 6 de Databricks trae la 2.32.5: la cota inferior no obliga a
+    # reinstalarla en cada ejecución del job.
+    "requests>=2.32",
+]
 
 [build-system]
 requires = ["uv_build>=0.13.1,<0.14"]
@@ -16,7 +20,9 @@ dev = [
     "mypy==2.4.0",
     "prek>=0.5.5",
     "pytest>=9.1.1",
+    "responses>=0.25",
     "ruff==0.17.0",
+    "types-requests>=2.32",
     "zizmor==1.30.1",
 ]
 
