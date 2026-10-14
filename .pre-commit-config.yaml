@@ -1,0 +1,52 @@
+# Hooks de calidad y seguridad. Se ejecutan con prek (compatible con pre-commit).
+# Los hooks remotos se fijan por SHA, con la versión en el comentario "frozen" que lee Dependabot.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-added-large-files
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      # El repo se trabaja desde Windows y Linux: nombres que solo difieren en
+      # mayúsculas y finales de línea mezclados rompen en uno de los dos.
+      - id: check-case-conflict
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  - repo: https://github.com/betterleaks/betterleaks
+    rev: 81aff7a638638aae3a659845d089043e1d8fe9ac # frozen: v1.9.0
+    hooks:
+      - id: betterleaks
+        # Explícito: la v2 deja de descubrir la configuración del repo por su cuenta.
+        args: [--config, .betterleaks.toml]
+
+  # ruff, mypy y zizmor corren desde el entorno de uv para usar las versiones de uv.lock,
+  # las mismas que la CI. "unsupported" es el nombre nuevo de "system": sin entorno gestionado.
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: ruff format
+        entry: uv run --locked ruff format --force-exclude
+        language: unsupported
+        types_or: [python, pyi]
+      - id: ruff-check
+        name: ruff check
+        entry: uv run --locked ruff check --force-exclude
+        language: unsupported
+        types_or: [python, pyi]
+      # Sin nombres de fichero: mypy comprueba siempre lo que fija pyproject.toml.
+      - id: mypy
+        name: mypy
+        entry: uv run --locked mypy
+        language: unsupported
+        types: [python]
+        pass_filenames: false
+      - id: zizmor
+        name: zizmor
+        entry: uv run --locked zizmor --no-progress
+        language: unsupported
+        files: (^|/)(\.github/(workflows/[^/]+|dependabot)\.ya?ml|action\.ya?ml|\.pre-commit-(config|hooks)\.ya?ml)$
+        require_serial: true

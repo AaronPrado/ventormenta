@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+# Un push nuevo a un PR cancela la ejecución anterior; en main se ejecutan todas.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Los name de los jobs son los checks que exige el ruleset de main: no cambiarlos sin
+# actualizarlo allí.
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Con "lowest", instala exactamente la versión mínima de required-version (pyproject.toml).
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          resolution-strategy: lowest
+      - run: make lint
+        env:
+          # zizmor lo usa para las auditorías que consultan GitHub; el token es de solo lectura.
+          GH_TOKEN: ${{ github.token }}
+
+  test:
+    name: test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          resolution-strategy: lowest
+      - run: make test
+
+  secrets:
+    name: secrets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      # Debe coincidir con el rev del hook en .pre-commit-config.yaml (lo comprueba un test).
+      BETTERLEAKS_VERSION: "1.9.0"
+      # Hash del tarball linux_x64 fijado aquí y no leído del checksums.txt de la release:
+      # si la release se comprometiera, podrían cambiar a la vez el binario y la lista.
+      BETTERLEAKS_SHA256: "f8b185a39ffcece2a1ca82bf3a4e7435cd81963ffd16b7a9128daf75f35f6de7"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Instala betterleaks
+        run: |
+          archive="betterleaks_${BETTERLEAKS_VERSION}_linux_x64.tar.gz"
+          curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+            --output "${RUNNER_TEMP}/${archive}" \
+            "https://github.com/betterleaks/betterleaks/releases/download/v${BETTERLEAKS_VERSION}/${archive}"
+          echo "${BETTERLEAKS_SHA256}  ${RUNNER_TEMP}/${archive}" | sha256sum --check --strict
+          tar -xzf "${RUNNER_TEMP}/${archive}" -C "${RUNNER_TEMP}" betterleaks
+          echo "${RUNNER_TEMP}" >> "${GITHUB_PATH}"
+      # Historial completo, sin validar hallazgos contra los proveedores (desactivado por defecto).
+      - name: Escanea el historial de git
+        run: betterleaks git --config .betterleaks.toml --redact --verbose --no-banner .
