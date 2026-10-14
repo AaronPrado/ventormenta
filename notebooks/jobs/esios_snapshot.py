@@ -53,5 +53,5 @@ if result.status is Status.UNEXPECTED:
     print("⚠️ Recuento inesperado: guardado y sin reintentar, porque repetir devolvería lo mismo.")
 
 dbutils.notebook.exit(  # noqa: F821
-    json.dumps({"path": path, "status": result.status, "detail": result.detail})
+    json.dumps({"path": path, "status": result.status, "detail": result.detail}, ensure_ascii=False)
 )
