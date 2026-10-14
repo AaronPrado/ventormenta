@@ -3,7 +3,7 @@
 Captura cada día la previsión eólica de Red Eléctrica para el día siguiente, tal como está
 antes del corte de las 12:00 hora peninsular de D-1. La API de e·sios solo devuelve la
 última versión de cada indicador, así que la comparación con Red Eléctrica solo puede
-hacerse con estas instantáneas propias ([diseño](ventormenta-presentacion.md) §7.2). Qué
+hacerse con estas instantáneas propias ([diseño](ventormenta-presentacion.md)). Qué
 publica cada indicador y cuándo: [fuentes-esios.md](fuentes-esios.md). Dónde y en qué
 formato se guarda: [espacio-de-datos.md](espacio-de-datos.md).
 
@@ -50,8 +50,8 @@ formato se guarda: [espacio-de-datos.md](espacio-de-datos.md).
 
 ## Despliegue
 
-Con la CLI de Databricks y el perfil de cada máquina; el despliegue desde CI llegará en la
-fase 1.
+Con la CLI de Databricks y el perfil de cada máquina; el despliegue desde la CI llegará
+más adelante.
 
 ```bash
 databricks bundle validate --strict -t prod

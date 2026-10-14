@@ -2,8 +2,8 @@
 
 Dónde guarda VenTormenta sus datos en Unity Catalog y cómo se organizan los ficheros
 crudos. Los objetos se definen en [`infra/unity_catalog.sql`](../infra/unity_catalog.sql);
-la arquitectura completa está en [el diseño](ventormenta-presentacion.md) (§8.1–8.2 y
-§14).
+la arquitectura completa y las licencias de las fuentes están en
+[el diseño](ventormenta-presentacion.md).
 
 ## Objetos
 
@@ -36,12 +36,11 @@ Se añadirán cuando llegue su ingesta o su fase:
   [almacenamiento por defecto](https://docs.databricks.com/aws/en/storage/default-storage):
   - solo el cómputo serverless puede leerlo;
   - los clientes externos pueden acceder a sus Volumes con la Files API, que es la vía
-    del vigilante de GitHub Actions (diseño §8.2).
+    del vigilante de GitHub Actions.
 
   Borrar un Volume gestionado borra también sus ficheros: la protección frente a
   pérdidas es la copia privada de las instantáneas, no Unity Catalog.
-- **Un Volume por fuente.** Cada fuente tiene su licencia y sus condiciones (diseño
-  §14): los crudos de Red Eléctrica no se redistribuyen, Open-Meteo es CC BY 4.0 y
+- **Un Volume por fuente.** Cada fuente tiene su licencia y sus condiciones: los crudos de Red Eléctrica no se redistribuyen, Open-Meteo es CC BY 4.0 y
   OpenStreetMap es ODbL, con los derivados aparte. Separarlas por Volume mantiene esa
   frontera y permite dar a cada credencial acceso solo a lo que necesita.
 - **Nombres en inglés**, como el código y las columnas bitemporales (`valid_time`,
@@ -78,7 +77,7 @@ Por ejemplo, una captura del 541 hecha a las 11:30 hora peninsular del 14 de oct
 - **Inmutables.** Un fichero no se sobrescribe nunca: repetir una captura crea otro
   fichero.
 - **La hora de captura también va dentro del fichero.** Es el `available_at` de la
-  instantánea (clase observada, diseño §7.1), y la fecha de modificación del fichero no
+  instantánea (clase de disponibilidad observada), y la fecha de modificación del fichero no
   sirve para eso. El formato es el sobre descrito abajo.
 
 ### Formato de las instantáneas (sobre JSON, `format_version` 1)
