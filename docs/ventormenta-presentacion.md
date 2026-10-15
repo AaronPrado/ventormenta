@@ -90,7 +90,7 @@ No se comprobó la salida desde Databricks hacia otros destinos (GitHub, almacen
 Publicable por sí solo y medible sin ninguna extensión. Si la pista gallega falla en el spike 2, el núcleo se cierra con el plan de respaldo.
 
 1. **Esqueleto Databricks desplegado desde CI**: bundles, Unity Catalog, Volumes y Auto Loader.
-2. **Instantáneas diarias** de la previsión de Red Eléctrica a las 12:00 de D-1, con copia semanal privada.
+2. **Instantáneas diarias** de la previsión de Red Eléctrica a las 12:00 de D-1, con copia privada diaria.
 3. **Workflow vigilante en GitHub Actions**: recoge las salidas, publica, guarda la copia y abre issues (sección 8).
 4. **Pista peninsular en operación diaria**: features point-in-time, ponderación geoespacial por grupos de potencia, MOS, intervalo empírico por cuantiles y monitorización básica con alertas.
 5. **Serie gallega reconstruida** con protocolo de mapeo congelado, muestra de referencia estratificada y las cuatro capas de validación (o, si el spike 2 falla, capítulo gallego mensual).
@@ -276,7 +276,7 @@ flowchart TD
 | Databricks SQL | Vistas de métricas y monitorización |
 | Tablas de sistema (si están disponibles) | Coste por ejecución y puntualidad |
 
-**Flujos hacia fuera invertidos**: Databricks no abre conexiones salvo a las fuentes de datos comprobadas. Un workflow programado de GitHub Actions, con la credencial del despliegue, descarga el JSON, el estado y las instantáneas por la API de ficheros, publica la web, guarda la copia privada y abre issues. Así el sistema puede avisar también de su propia caída: si Databricks no produce nada a su hora, el vigilante lo detecta.
+**Flujos hacia fuera invertidos**: Databricks no abre conexiones salvo a las fuentes de datos comprobadas. Un workflow programado de GitHub Actions descarga el JSON, el estado y las instantáneas por la API de ficheros, publica la web, guarda la copia privada y abre issues. Entra en Databricks con una credencial propia y de solo lectura, distinta de la del despliegue: corre a diario desde un repositorio público y solo necesita leer. Así el sistema puede avisar también de su propia caída: si Databricks no produce nada a su hora, el vigilante lo detecta.
 
 **Protección de la cuota**: el backfill de I90 es un job aparte, limitado por lotes y programado después del operativo.
 
