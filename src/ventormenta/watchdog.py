@@ -148,7 +148,7 @@ def overall(checks: Iterable[DayCheck], corrupt: Sequence[Corrupt]) -> Verdict:
     return max(verdicts, key=severity.index, default=Verdict.OK)
 
 
-_LABELS = {Verdict.OK: "✅ ok", Verdict.WARNING: "⚠️ aviso", Verdict.FAILURE: "❌ fallo"}
+VERDICT_LABELS = {Verdict.OK: "✅ ok", Verdict.WARNING: "⚠️ aviso", Verdict.FAILURE: "❌ fallo"}
 
 
 def render_report(checks: Iterable[DayCheck], corrupt: Sequence[Corrupt]) -> str:
@@ -165,7 +165,7 @@ def render_report(checks: Iterable[DayCheck], corrupt: Sequence[Corrupt]) -> str
         cells = [
             check.day.isoformat(),
             str(check.indicator_id),
-            _LABELS[check.verdict],
+            VERDICT_LABELS[check.verdict],
             check.reason,
         ]
         if check.capture is None:
