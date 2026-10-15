@@ -42,6 +42,21 @@ def _as_utc(moment: datetime) -> datetime:
     return moment.astimezone(UTC)
 
 
+def indicators_root(root: str) -> str:
+    """Carpeta con una subcarpeta por indicador: ``<root>/indicators``."""
+    return posixpath.join(root, "indicators")
+
+
+def indicator_dir(root: str, indicator_id: int) -> str:
+    """Carpeta de un indicador: ``<root>/indicators/<id>``."""
+    return posixpath.join(indicators_root(root), str(indicator_id))
+
+
+def capture_dir_name(capture_date: date) -> str:
+    """Nombre de la carpeta de una fecha de captura UTC, en formato ``clave=valor``."""
+    return f"capture_date={capture_date:%Y-%m-%d}"
+
+
 def snapshot_path(root: str, indicator_id: int, received_at: datetime) -> str:
     """Ruta de la captura: ``<root>/indicators/<id>/capture_date=<fecha>/<instante>.json``.
 
@@ -50,10 +65,8 @@ def snapshot_path(root: str, indicator_id: int, received_at: datetime) -> str:
     """
     moment = _as_utc(received_at)
     return posixpath.join(
-        root,
-        "indicators",
-        str(indicator_id),
-        f"capture_date={moment:%Y-%m-%d}",
+        indicator_dir(root, indicator_id),
+        capture_dir_name(moment.date()),
         f"{moment:%Y%m%dT%H%M%SZ}.json",
     )
 
