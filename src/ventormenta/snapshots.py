@@ -111,7 +111,7 @@ def read_envelope(data: bytes) -> tuple[RawResponse, date]:
         envelope = json.loads(data)
         version = envelope["format_version"]
     except (KeyError, TypeError, ValueError) as err:
-        raise EnvelopeError(f"no es un sobre JSON: {err!r}") from err
+        raise EnvelopeError(f"no es un sobre JSON: {type(err).__name__}: {err}") from err
     if version != FORMAT_VERSION:
         raise EnvelopeError(f"format_version {version!r} no soportada (se espera {FORMAT_VERSION})")
 
@@ -131,7 +131,7 @@ def read_envelope(data: bytes) -> tuple[RawResponse, date]:
         target_date = date.fromisoformat(envelope["target_date"])
         expected_sha256 = response["body_sha256"]
     except (KeyError, TypeError, ValueError) as err:
-        raise EnvelopeError(f"sobre ilegible: {err!r}") from err
+        raise EnvelopeError(f"sobre ilegible: {type(err).__name__}: {err}") from err
 
     if hashlib.sha256(body).hexdigest() != expected_sha256:
         raise EnvelopeError("el cuerpo no cuadra con body_sha256")
@@ -193,7 +193,10 @@ def check_completeness(raw: RawResponse, target_date: date, step: timedelta) -> 
         moments = [datetime.fromisoformat(value["datetime_utc"]) for value in values]
         in_day = [moment for moment in moments if start <= moment < end]
     except (ValueError, KeyError, TypeError) as err:
-        return Completeness(Status.UNREADABLE, expected, 0, f"respuesta ilegible: {err!r}")
+        # Sin repr: el de UnicodeDecodeError incluye el cuerpo entero, y el detalle acaba en
+        # logs e issues públicos.
+        detail = f"respuesta ilegible: {type(err).__name__}: {err}"
+        return Completeness(Status.UNREADABLE, expected, 0, detail)
 
     found = len(in_day)
     if not moments:

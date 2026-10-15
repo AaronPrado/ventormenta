@@ -191,6 +191,14 @@ def test_read_envelope_rejects_invalid_envelopes(data: bytes, message: str) -> N
         read_envelope(data)
 
 
+def test_read_envelope_error_does_not_carry_the_file_contents() -> None:
+    """El mensaje acaba en logs e issues públicos: no puede llevar datos de Red Eléctrica."""
+    data = b'\xff{"value": 98765.4321}'
+    with pytest.raises(EnvelopeError) as excinfo:
+        read_envelope(data)
+    assert "98765" not in str(excinfo.value)
+
+
 # --- Escritura ---
 
 
@@ -247,6 +255,13 @@ def test_unreadable_response_is_retryable(body: bytes) -> None:
     result = check_completeness(make_raw(body), DAY, HOUR)
     assert result.status is Status.UNREADABLE
     assert result.retryable
+
+
+def test_unreadable_detail_does_not_carry_the_body() -> None:
+    """El detalle acaba en logs e issues públicos: no puede llevar datos de Red Eléctrica."""
+    result = check_completeness(make_raw(b'\xff{"value": 98765.4321}'), DAY, QUARTER_HOUR)
+    assert result.status is Status.UNREADABLE
+    assert "98765" not in result.detail
 
 
 def test_24_hours_on_a_25_hour_day_is_unexpected() -> None:
