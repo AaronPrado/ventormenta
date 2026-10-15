@@ -9,6 +9,7 @@ import base64
 import hashlib
 import json
 import posixpath
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from enum import StrEnum
@@ -85,6 +86,56 @@ def build_envelope(raw: RawResponse, target_date: date) -> bytes:
         },
     }
     return (json.dumps(envelope, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+
+
+class EnvelopeError(ValueError):
+    """El fichero no es un sobre legible de esta versión, o su cuerpo no cuadra con el hash."""
+
+
+# Inversas de las codificaciones del cuerpo que usa build_envelope.
+_BODY_DECODERS: dict[str, Callable[[str], bytes]] = {
+    "utf-8": lambda text: text.encode("utf-8"),
+    "base64": lambda text: base64.b64decode(text, validate=True),
+}
+
+
+def read_envelope(data: bytes) -> tuple[RawResponse, date]:
+    """Lee un sobre: devuelve la respuesta tal como llegó y el día D pedido.
+
+    Es la inversa de ``build_envelope``, así que lo leído pasa por ``check_completeness``
+    igual que en la captura. Lanza ``EnvelopeError`` si el fichero no es un sobre de la
+    versión actual, si le falta algo o si el cuerpo no cuadra con ``body_sha256``: en ese
+    caso no es la respuesta que se recibió.
+    """
+    try:
+        envelope = json.loads(data)
+        version = envelope["format_version"]
+    except (KeyError, TypeError, ValueError) as err:
+        raise EnvelopeError(f"no es un sobre JSON: {err!r}") from err
+    if version != FORMAT_VERSION:
+        raise EnvelopeError(f"format_version {version!r} no soportada (se espera {FORMAT_VERSION})")
+
+    try:
+        request, response = envelope["request"], envelope["response"]
+        body = _BODY_DECODERS[response["body_encoding"]](response["body"])
+        raw = RawResponse(
+            indicator_id=envelope["indicator_id"],
+            url=request["url"],
+            params=request["params"],
+            status_code=response["status_code"],
+            body=body,
+            server_date=response["server_date"],
+            requested_at=_as_utc(datetime.fromisoformat(envelope["requested_at"])),
+            received_at=_as_utc(datetime.fromisoformat(envelope["received_at"])),
+        )
+        target_date = date.fromisoformat(envelope["target_date"])
+        expected_sha256 = response["body_sha256"]
+    except (KeyError, TypeError, ValueError) as err:
+        raise EnvelopeError(f"sobre ilegible: {err!r}") from err
+
+    if hashlib.sha256(body).hexdigest() != expected_sha256:
+        raise EnvelopeError("el cuerpo no cuadra con body_sha256")
+    return raw, target_date
 
 
 def write_snapshot(uploader: FileUploader, root: str, raw: RawResponse, target_date: date) -> str:
