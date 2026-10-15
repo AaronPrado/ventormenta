@@ -127,3 +127,27 @@ parsear, junto con los datos de la captura. Lo escribe `ventormenta.snapshots`.
 Ejecutar [`infra/unity_catalog.sql`](../infra/unity_catalog.sql) en el editor SQL del
 workspace con un usuario que tenga el privilegio `CREATE CATALOG` (en Free Edition, el
 administrador del workspace). Es idempotente: volver a ejecutarlo no cambia nada.
+
+El grupo `ventormenta-watchers` debe existir antes: se crea en la configuración del
+workspace (Identity and access), que en Free Edition crea grupos de cuenta, los únicos que
+admite Unity Catalog.
+
+## Acceso del vigilante
+
+El workflow vigilante de GitHub Actions lee las instantáneas con un service principal
+propio, `ventormenta-watchdog`, miembro del grupo `ventormenta-watchers`. Los privilegios
+se conceden al grupo, no a la identidad, así que cambiarla o rotar su secreto no toca el
+repositorio.
+
+| Capa | Qué tiene | Qué impide |
+|---|---|---|
+| Unity Catalog (grupo) | `USE CATALOG` en `ventormenta`, `USE SCHEMA` en `ventormenta.raw` y `READ VOLUME` en `ventormenta.raw.esios` | Escribir en el Volume y leer cualquier otro |
+| Scopes del secreto OAuth | `files` y `jobs` | Llamar a cualquier otra API, como la de secretos, donde vive el token de e·sios |
+| Entitlement (grupo) | Workspace access | — |
+
+- `READ VOLUME` va en el propio Volume y no en el esquema: en el esquema se heredaría a los
+  Volumes que se añadan después.
+- El SDK de Databricks pide por defecto un token con el scope `all-apis`, que el secreto
+  rechaza: el cliente tiene que pedir sus scopes de forma explícita.
+- El secreto caduca a los 365 días. Cuando caduque, el vigilante dejará de poder leer y lo
+  avisará con un issue.
