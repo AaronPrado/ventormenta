@@ -62,6 +62,12 @@ def test_one_issue_per_day_with_problems() -> None:
     assert RUN_URL in issue.body
 
 
+def test_the_day_issue_includes_the_job_diagnosis() -> None:
+    diagnosis = {DAY: "ninguna ejecución del job antes del corte"}
+    (issue,) = day_issues([check(DAY, 541, Verdict.FAILURE)], RUN_URL, diagnosis)
+    assert "ninguna ejecución del job antes del corte" in issue.body
+
+
 def test_a_day_with_only_warnings_gets_the_warning_label() -> None:
     (issue,) = day_issues([check(DAY, 541, Verdict.WARNING), check(DAY, 1777, Verdict.OK)], RUN_URL)
     assert issue.labels == (LABEL, "aviso")

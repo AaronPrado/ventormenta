@@ -6,7 +6,7 @@ del vigilante) no duplica avisos. Los cuerpos llevan solo metadatos, nunca valor
 Eléctrica, porque el repositorio es público.
 """
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
 
@@ -35,7 +35,9 @@ def _footer(run_url: str) -> str:
     return f"\n---\nAbierto por el vigilante en la ejecución {run_url}\n"
 
 
-def day_issues(checks: Sequence[DayCheck], run_url: str) -> list[Issue]:
+def day_issues(
+    checks: Sequence[DayCheck], run_url: str, diagnosis: Mapping[date, str] | None = None
+) -> list[Issue]:
     """Un issue por cada día D en el que algún indicador no está ``ok``."""
     issues: list[Issue] = []
     for day in sorted({check.day for check in checks}):
@@ -49,9 +51,10 @@ def day_issues(checks: Sequence[DayCheck], run_url: str) -> list[Issue]:
             else "Solo hay capturas con un recuento inesperado"
         )
         cutoff_day = day - timedelta(days=1)
+        job = f"\nJob: {diagnosis[day]}\n" if diagnosis and day in diagnosis else ""
         body = (
             f"{summary} para el día D {day} (corte: 12:00 peninsulares del {cutoff_day}).\n\n"
-            f"{render_report(own, [])}{_footer(run_url)}"
+            f"{render_report(own, [])}{job}{_footer(run_url)}"
         )
         title = f"Vigilante: instantáneas del {day}"
         issues.append(Issue(title, body, (LABEL, _SEVERITY_LABELS[worst])))

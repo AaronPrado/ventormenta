@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from datetime import date
 from functools import partial
 from pathlib import Path
+from typing import Protocol
 
 import requests
 from databricks.sdk import WorkspaceClient
@@ -29,6 +30,7 @@ from ventormenta.issues import (
     integrity_issues,
     publish,
 )
+from ventormenta.jobs import JobsReader, diagnose
 from ventormenta.peninsular import MADRID
 from ventormenta.volume import FileReader, download_window
 from ventormenta.watchdog import (
@@ -66,6 +68,7 @@ def run(
     backup_dir: Path | None,
     publisher: Publisher | None,
     run_url: str,
+    diagnosis: Mapping[date, str] | None = None,
 ) -> Outcome:
     """Copia, evalúa y avisa a partir de los ficheros ya descargados de la ventana.
 
@@ -84,12 +87,16 @@ def run(
 
     captures, corrupt = read_captures(files)
     checks = check_window(days, captures)
-    issues = day_issues(checks, run_url) + integrity_issues(corrupt, mismatched, run_url)
+    issues = day_issues(checks, run_url, diagnosis)
+    issues += integrity_issues(corrupt, mismatched, run_url)
     created = publisher(issues) if publisher is not None and issues else []
 
     verdict = Verdict.FAILURE if mismatched else overall(checks, corrupt)
     lines = [f"## Vigilante de instantáneas: {VERDICT_LABELS[verdict]}", ""]
     lines += [render_report(checks, corrupt), backup_line]
+    if diagnosis:
+        lines += ["", "Ejecuciones del job antes del corte:"]
+        lines += [f"- {day}: {diagnosis[day]}" for day in sorted(diagnosis)]
     if publisher is None and issues:
         lines += ["", "En seco: se abrirían, si no existen ya:"]
         lines += [f"- {issue.title}" for issue in issues]
@@ -128,8 +135,18 @@ def _run_url(env: Mapping[str, str]) -> str:
     return f"{server}/{repository}/actions/runs/{run_id}"
 
 
-def _files_api() -> FileReader:
-    return WorkspaceClient(config=Config(scopes=SCOPES)).files
+class Workspace(Protocol):
+    """Lo que el vigilante usa del cliente de Databricks: un token para las dos APIs."""
+
+    @property
+    def files(self) -> FileReader: ...
+
+    @property
+    def jobs(self) -> JobsReader: ...
+
+
+def _workspace() -> Workspace:
+    return WorkspaceClient(config=Config(scopes=SCOPES))
 
 
 def _write_summary(report: str) -> None:
@@ -155,7 +172,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             publisher = partial(publish, GitHubIssues(session, repository, token))
 
         try:
-            files = download_window(_files_api(), args.volume_root, days)
+            workspace = _workspace()
+            files = download_window(workspace.files, args.volume_root, days)
         except Exception as err:
             # Cualquier fallo al leer Databricks es el aviso de «sin acceso». Solo la clase:
             # el mensaje del SDK lleva datos de la cuenta, y el log y el issue son públicos.
@@ -166,7 +184,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                 publisher([access_issue(today, error_class, run_url)])
             return 1
 
-        outcome = run(files, days, args.volume_root, args.backup_dir, publisher, run_url)
+        try:
+            diagnosis = diagnose(workspace.jobs, days)
+        except Exception as err:
+            # El diagnóstico es contexto: si falla, el veredicto de los ficheros sigue valiendo.
+            diagnosis = dict.fromkeys(days, f"diagnóstico no disponible ({type(err).__name__})")
+
+        outcome = run(files, days, args.volume_root, args.backup_dir, publisher, run_url, diagnosis)
     _write_summary(outcome.report)
     return 1 if outcome.verdict is Verdict.FAILURE else 0
 

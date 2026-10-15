@@ -17,6 +17,12 @@ resources:
       # Corta la ejecución hacia las 12:00: una captura posterior al corte ya no sirve para el D.
       timeout_seconds: 3600
 
+      # El vigilante de GitHub Actions lee el estado de las ejecuciones para diagnosticar
+      # fallos. CAN_VIEW no permite lanzarlas ni cambiar el job.
+      permissions:
+        - group_name: ventormenta-watchers
+          level: CAN_VIEW
+
       # Una tarea por indicador: un reintento solo repite la petición que falló.
       # Encadenadas para que las dos peticiones no coincidan; la segunda corre aunque falle la primera.
       # Presupuesto: 2 peticiones al día y, con 3 reintentos por tarea, 8 como máximo.

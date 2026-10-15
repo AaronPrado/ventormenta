@@ -14,9 +14,8 @@ from ventormenta.esios import NATIVE_STEPS, RawResponse, day_params
 from ventormenta.issues import LABEL, Issue
 from ventormenta.peninsular import day_bounds
 from ventormenta.snapshots import build_envelope, snapshot_path
-from ventormenta.volume import FileReader
 from ventormenta.watchdog import Verdict
-from ventormenta.watchdog_main import main, run
+from ventormenta.watchdog_main import Workspace, main, run
 
 ROOT = "/Volumes/ventormenta/raw/esios"
 DAY = date(2026, 10, 16)
@@ -99,6 +98,12 @@ def test_backup_is_written_and_a_changed_file_is_a_failure(tmp_path: Path) -> No
     ]
 
 
+def test_the_job_diagnosis_goes_into_the_report() -> None:
+    diagnosis = {DAY: "ejecución 7 (2026-10-15 09:00 UTC): SUCCESS"}
+    outcome = run([capture(541)], [DAY], ROOT, None, None, RUN_URL, diagnosis)
+    assert "- 2026-10-16: ejecución 7 (2026-10-15 09:00 UTC): SUCCESS" in outcome.report
+
+
 # --- main ---
 
 
@@ -109,14 +114,14 @@ def no_github_env(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv(name, raising=False)
 
 
-def failing_files_api() -> FileReader:
+def failing_workspace() -> Workspace:
     raise PermissionError("mensaje con datos de la cuenta")
 
 
 def test_access_failure_in_dry_run_exits_with_error(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], no_github_env: None
 ) -> None:
-    monkeypatch.setattr(watchdog_main, "_files_api", failing_files_api)
+    monkeypatch.setattr(watchdog_main, "_workspace", failing_workspace)
     assert main(["--dry-run", "--target-date", "2026-10-16"]) == 1
     error = capsys.readouterr().err
     assert "PermissionError" in error
@@ -134,7 +139,7 @@ def test_access_failure_opens_the_access_issue(
 ) -> None:
     monkeypatch.setenv("GITHUB_REPOSITORY", "AaronPrado/ventormenta")
     monkeypatch.setenv("GITHUB_TOKEN", "token-de-prueba")
-    monkeypatch.setattr(watchdog_main, "_files_api", failing_files_api)
+    monkeypatch.setattr(watchdog_main, "_workspace", failing_workspace)
     mocked.get(ISSUES_URL, json=[])
     mocked.post(
         ISSUES_URL,
@@ -155,7 +160,7 @@ def test_report_goes_to_the_step_summary(
 ) -> None:
     summary = tmp_path / "summary.md"
     monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary))
-    monkeypatch.setattr(watchdog_main, "_files_api", lambda: object())
+    monkeypatch.setattr(watchdog_main, "_workspace", lambda: NoJobsWorkspace())
 
     def fake_download(reader: object, root: str, days: Sequence[date]) -> list[tuple[str, bytes]]:
         assert days == [DAY]
@@ -163,4 +168,41 @@ def test_report_goes_to_the_step_summary(
 
     monkeypatch.setattr(watchdog_main, "download_window", fake_download)
     assert main(["--dry-run", "--target-date", "2026-10-16"]) == 0
-    assert "| 2026-10-16 | 541 |" in summary.read_text(encoding="utf-8")
+    text = summary.read_text(encoding="utf-8")
+    assert "| 2026-10-16 | 541 |" in text
+    assert "2026-10-16: el job esios_snapshots no existe o el vigilante no puede verlo" in text
+
+
+class NoJobs:
+    """API de Jobs sin ningún job visible, como antes de conceder ``CAN_VIEW``."""
+
+    def list(self, *, name: str | None = None) -> Iterator[object]:
+        return iter([])
+
+
+class NoJobsWorkspace:
+    files = object()
+    jobs = NoJobs()
+
+
+class BrokenJobs:
+    def list(self, *, name: str | None = None) -> Iterator[object]:
+        raise PermissionError("mensaje con datos de la cuenta")
+
+
+class BrokenJobsWorkspace:
+    files = object()
+    jobs = BrokenJobs()
+
+
+def test_a_jobs_api_failure_does_not_hide_the_verdict(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], no_github_env: None
+) -> None:
+    monkeypatch.setattr(watchdog_main, "_workspace", lambda: BrokenJobsWorkspace())
+    monkeypatch.setattr(
+        watchdog_main, "download_window", lambda reader, root, days: [capture(541), capture(1777)]
+    )
+    assert main(["--dry-run", "--target-date", "2026-10-16"]) == 0
+    output = capsys.readouterr().out
+    assert "diagnóstico no disponible (PermissionError)" in output
+    assert "datos de la cuenta" not in output
