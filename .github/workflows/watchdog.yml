@@ -1,0 +1,87 @@
+name: Vigilante
+
+on:
+  schedule:
+    # 12:17 peninsulares: después del corte de las 12:00 todo el año, y lejos de la hora en
+    # punto, cuando GitHub más retrasa o descarta las ejecuciones programadas.
+    - cron: "17 12 * * *"
+      timezone: Europe/Madrid
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: "Día D a revisar (AAAA-MM-DD). Vacío: la ventana de los últimos días."
+        required: false
+        type: string
+
+permissions: {}
+
+# Nunca dos ejecuciones a la vez: las dos escribirían en la copia y podrían abrir el mismo issue.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  watchdog:
+    name: watchdog
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # Los secretos de Databricks y la deploy key solo existen en este environment, que solo
+    # admite main: ni un PR ni otra rama pueden leerlos.
+    environment: watchdog
+    permissions:
+      contents: read # checkout del código del vigilante
+      issues: write # abrir los issues de aviso
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # La deploy key solo da escritura en el repositorio de la copia. Se guarda en la
+      # configuración del clon para el push del último paso; el job no sube artefactos.
+      - name: Clona la copia privada
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.repository }}-backup
+          ssh-key: ${{ secrets.BACKUP_DEPLOY_KEY }}
+          path: backup
+          persist-credentials: true # zizmor: ignore[artipacked]
+
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          resolution-strategy: lowest
+
+      # Solo el paquete y el grupo watchdog: ni ruff, ni mypy, ni pytest.
+      - name: Instala el vigilante
+        run: uv sync --locked --no-dev --group watchdog
+
+      - name: Ejecuta el vigilante
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+          DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+          DATABRICKS_AUTH_TYPE: oauth-m2m
+          GITHUB_TOKEN: ${{ github.token }}
+          # Por variable de entorno y no dentro del script: el valor lo escribe quien lanza
+          # el workflow y no puede inyectar órdenes en el shell.
+          TARGET_DATE: ${{ inputs.target_date }}
+        run: |
+          args=(--backup-dir backup)
+          if [[ -n "${TARGET_DATE}" ]]; then
+            args+=(--target-date "${TARGET_DATE}")
+          fi
+          uv run --no-sync python -m ventormenta.watchdog_main "${args[@]}"
+
+      # También cuando el vigilante encuentra un fallo: la copia de lo que sí hay no espera.
+      - name: Guarda la copia privada
+        if: ${{ !cancelled() }}
+        working-directory: backup
+        run: |
+          git add --all
+          if git diff --cached --quiet; then
+            echo "Copia privada sin cambios."
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit --quiet -m "Instantáneas copiadas el $(date -u +%F)"
+          git push --quiet
