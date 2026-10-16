@@ -10,6 +10,7 @@ from ventormenta.esios import NATIVE_STEPS, RawResponse, day_params
 from ventormenta.peninsular import day_bounds, decision_cutoff
 from ventormenta.snapshots import build_envelope
 from ventormenta.watchdog import (
+    OPERATIONS_START,
     WINDOW_DAYS,
     Capture,
     Corrupt,
@@ -73,17 +74,32 @@ def captures_from(*files: bytes) -> list[Capture]:
 # --- Ventana ---
 
 
+# Inicio de operación anterior a todas las fechas de estos tests, para probar la ventana sola.
+LONG_AGO = date(2026, 1, 1)
+
+
 def test_decided_days_ends_at_the_last_decided_day() -> None:
-    days = decided_days(datetime(2026, 10, 15, 10, 17, tzinfo=UTC))
+    days = decided_days(datetime(2026, 10, 15, 10, 17, tzinfo=UTC), start=LONG_AGO)
     assert len(days) == WINDOW_DAYS
     assert days == [date(2026, 10, 10) + timedelta(days=i) for i in range(WINDOW_DAYS)]
 
 
 def test_decided_days_before_the_cutoff_ends_today() -> None:
-    assert decided_days(datetime(2026, 10, 15, 9, 59, tzinfo=UTC), window=2) == [
+    now = datetime(2026, 10, 15, 9, 59, tzinfo=UTC)
+    assert decided_days(now, window=2, start=LONG_AGO) == [
         date(2026, 10, 14),
         date(2026, 10, 15),
     ]
+
+
+def test_decided_days_never_go_before_the_start_of_operations() -> None:
+    now = datetime(2026, 10, 16, 10, 17, tzinfo=UTC)
+    assert decided_days(now, start=date(2026, 10, 16)) == [date(2026, 10, 16), date(2026, 10, 17)]
+
+
+def test_by_default_the_window_starts_with_the_first_scheduled_capture() -> None:
+    assert date(2026, 10, 16) == OPERATIONS_START
+    assert decided_days(datetime(2026, 10, 15, 10, 17, tzinfo=UTC)) == [date(2026, 10, 16)]
 
 
 # --- Lectura ---

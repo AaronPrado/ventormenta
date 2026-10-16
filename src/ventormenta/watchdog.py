@@ -28,11 +28,18 @@ from ventormenta.snapshots import (
 # siguiente cubre ese día.
 WINDOW_DAYS = 7
 
+# Primer día D que capturó el job programado (primera ejecución: 11:00 peninsulares del
+# 2026-10-15). Antes no había operación que vigilar: esos días solo darían avisos falsos.
+OPERATIONS_START = date(2026, 10, 16)
 
-def decided_days(now: datetime, window: int = WINDOW_DAYS) -> list[date]:
-    """Los ``window`` últimos días D cuyo corte ya ha pasado en ``now``, en orden."""
+
+def decided_days(
+    now: datetime, window: int = WINDOW_DAYS, start: date = OPERATIONS_START
+) -> list[date]:
+    """Los ``window`` últimos días D cuyo corte ya ha pasado en ``now``, desde ``start``."""
     last = last_decided_day(now)
-    return [last - timedelta(days=offset) for offset in reversed(range(window))]
+    days = [last - timedelta(days=offset) for offset in reversed(range(window))]
+    return [day for day in days if day >= start]
 
 
 class Verdict(StrEnum):
