@@ -3,6 +3,7 @@
 import base64
 import hashlib
 import json
+from collections.abc import Callable
 from datetime import UTC, date, datetime, timedelta
 from typing import Any, BinaryIO
 
@@ -12,9 +13,11 @@ from ventormenta.esios import NATIVE_STEPS, RawResponse, day_params
 from ventormenta.peninsular import day_bounds
 from ventormenta.snapshots import (
     FORMAT_VERSION,
+    EnvelopeError,
     Status,
     build_envelope,
     check_completeness,
+    read_envelope,
     snapshot_path,
     write_snapshot,
 )
@@ -134,6 +137,68 @@ def test_envelope_stores_non_utf8_body_as_base64() -> None:
     assert response["body_sha256"] == hashlib.sha256(body).hexdigest()
 
 
+# --- Lectura del sobre ---
+
+
+@pytest.mark.parametrize(
+    "body",
+    [body_with(day_values(DAY, QUARTER_HOUR)), b"\xff\xfe no es UTF-8"],
+    ids=["utf-8", "base64"],
+)
+def test_read_envelope_is_the_inverse_of_build_envelope(body: bytes) -> None:
+    raw = make_raw(body)
+    assert read_envelope(build_envelope(raw, DAY)) == (raw, DAY)
+
+
+def test_read_envelope_gives_the_same_completeness_as_the_capture() -> None:
+    raw = make_raw(body_with(day_values(DAY, QUARTER_HOUR)))
+    read_raw, target_date = read_envelope(build_envelope(raw, DAY))
+    assert check_completeness(read_raw, target_date, QUARTER_HOUR) == check_completeness(
+        raw, DAY, QUARTER_HOUR
+    )
+
+
+def tampered(change: Callable[[dict[str, Any]], object]) -> bytes:
+    """Sobre válido modificado por ``change``, que recibe el diccionario y lo altera."""
+    envelope = json.loads(build_envelope(make_raw(body_with(day_values(DAY, HOUR))), DAY))
+    change(envelope)
+    return json.dumps(envelope).encode()
+
+
+@pytest.mark.parametrize(
+    ("data", "message"),
+    [
+        (b"<html>no es JSON</html>", "no es un sobre"),
+        (b"[1, 2, 3]", "no es un sobre"),
+        (tampered(lambda e: e.update(format_version=FORMAT_VERSION + 1)), "no soportada"),
+        (tampered(lambda e: e.pop("received_at")), "ilegible"),
+        (tampered(lambda e: e["response"].update(body_encoding="latin-1")), "ilegible"),
+        (tampered(lambda e: e.update(received_at="2026-10-14T09:05:02")), "ilegible"),
+        (tampered(lambda e: e["response"].update(body="{}")), "body_sha256"),
+    ],
+    ids=[
+        "no-json",
+        "no-objeto",
+        "version-futura",
+        "falta-campo",
+        "codificacion-desconocida",
+        "instante-ingenuo",
+        "cuerpo-alterado",
+    ],
+)
+def test_read_envelope_rejects_invalid_envelopes(data: bytes, message: str) -> None:
+    with pytest.raises(EnvelopeError, match=message):
+        read_envelope(data)
+
+
+def test_read_envelope_error_does_not_carry_the_file_contents() -> None:
+    """El mensaje acaba en logs e issues públicos: no puede llevar datos de Red Eléctrica."""
+    data = b'\xff{"value": 98765.4321}'
+    with pytest.raises(EnvelopeError) as excinfo:
+        read_envelope(data)
+    assert "98765" not in str(excinfo.value)
+
+
 # --- Escritura ---
 
 
@@ -190,6 +255,13 @@ def test_unreadable_response_is_retryable(body: bytes) -> None:
     result = check_completeness(make_raw(body), DAY, HOUR)
     assert result.status is Status.UNREADABLE
     assert result.retryable
+
+
+def test_unreadable_detail_does_not_carry_the_body() -> None:
+    """El detalle acaba en logs e issues públicos: no puede llevar datos de Red Eléctrica."""
+    result = check_completeness(make_raw(b'\xff{"value": 98765.4321}'), DAY, QUARTER_HOUR)
+    assert result.status is Status.UNREADABLE
+    assert "98765" not in result.detail
 
 
 def test_24_hours_on_a_25_hour_day_is_unexpected() -> None:

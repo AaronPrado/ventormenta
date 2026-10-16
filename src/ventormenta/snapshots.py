@@ -9,6 +9,7 @@ import base64
 import hashlib
 import json
 import posixpath
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from enum import StrEnum
@@ -41,6 +42,21 @@ def _as_utc(moment: datetime) -> datetime:
     return moment.astimezone(UTC)
 
 
+def indicators_root(root: str) -> str:
+    """Carpeta con una subcarpeta por indicador: ``<root>/indicators``."""
+    return posixpath.join(root, "indicators")
+
+
+def indicator_dir(root: str, indicator_id: int) -> str:
+    """Carpeta de un indicador: ``<root>/indicators/<id>``."""
+    return posixpath.join(indicators_root(root), str(indicator_id))
+
+
+def capture_dir_name(capture_date: date) -> str:
+    """Nombre de la carpeta de una fecha de captura UTC, en formato ``clave=valor``."""
+    return f"capture_date={capture_date:%Y-%m-%d}"
+
+
 def snapshot_path(root: str, indicator_id: int, received_at: datetime) -> str:
     """Ruta de la captura: ``<root>/indicators/<id>/capture_date=<fecha>/<instante>.json``.
 
@@ -49,10 +65,8 @@ def snapshot_path(root: str, indicator_id: int, received_at: datetime) -> str:
     """
     moment = _as_utc(received_at)
     return posixpath.join(
-        root,
-        "indicators",
-        str(indicator_id),
-        f"capture_date={moment:%Y-%m-%d}",
+        indicator_dir(root, indicator_id),
+        capture_dir_name(moment.date()),
         f"{moment:%Y%m%dT%H%M%SZ}.json",
     )
 
@@ -85,6 +99,56 @@ def build_envelope(raw: RawResponse, target_date: date) -> bytes:
         },
     }
     return (json.dumps(envelope, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+
+
+class EnvelopeError(ValueError):
+    """El fichero no es un sobre legible de esta versión, o su cuerpo no cuadra con el hash."""
+
+
+# Inversas de las codificaciones del cuerpo que usa build_envelope.
+_BODY_DECODERS: dict[str, Callable[[str], bytes]] = {
+    "utf-8": lambda text: text.encode("utf-8"),
+    "base64": lambda text: base64.b64decode(text, validate=True),
+}
+
+
+def read_envelope(data: bytes) -> tuple[RawResponse, date]:
+    """Lee un sobre: devuelve la respuesta tal como llegó y el día D pedido.
+
+    Es la inversa de ``build_envelope``, así que lo leído pasa por ``check_completeness``
+    igual que en la captura. Lanza ``EnvelopeError`` si el fichero no es un sobre de la
+    versión actual, si le falta algo o si el cuerpo no cuadra con ``body_sha256``: en ese
+    caso no es la respuesta que se recibió.
+    """
+    try:
+        envelope = json.loads(data)
+        version = envelope["format_version"]
+    except (KeyError, TypeError, ValueError) as err:
+        raise EnvelopeError(f"no es un sobre JSON: {type(err).__name__}: {err}") from err
+    if version != FORMAT_VERSION:
+        raise EnvelopeError(f"format_version {version!r} no soportada (se espera {FORMAT_VERSION})")
+
+    try:
+        request, response = envelope["request"], envelope["response"]
+        body = _BODY_DECODERS[response["body_encoding"]](response["body"])
+        raw = RawResponse(
+            indicator_id=envelope["indicator_id"],
+            url=request["url"],
+            params=request["params"],
+            status_code=response["status_code"],
+            body=body,
+            server_date=response["server_date"],
+            requested_at=_as_utc(datetime.fromisoformat(envelope["requested_at"])),
+            received_at=_as_utc(datetime.fromisoformat(envelope["received_at"])),
+        )
+        target_date = date.fromisoformat(envelope["target_date"])
+        expected_sha256 = response["body_sha256"]
+    except (KeyError, TypeError, ValueError) as err:
+        raise EnvelopeError(f"sobre ilegible: {type(err).__name__}: {err}") from err
+
+    if hashlib.sha256(body).hexdigest() != expected_sha256:
+        raise EnvelopeError("el cuerpo no cuadra con body_sha256")
+    return raw, target_date
 
 
 def write_snapshot(uploader: FileUploader, root: str, raw: RawResponse, target_date: date) -> str:
@@ -142,7 +206,10 @@ def check_completeness(raw: RawResponse, target_date: date, step: timedelta) -> 
         moments = [datetime.fromisoformat(value["datetime_utc"]) for value in values]
         in_day = [moment for moment in moments if start <= moment < end]
     except (ValueError, KeyError, TypeError) as err:
-        return Completeness(Status.UNREADABLE, expected, 0, f"respuesta ilegible: {err!r}")
+        # Sin repr: el de UnicodeDecodeError incluye el cuerpo entero, y el detalle acaba en
+        # logs e issues públicos.
+        detail = f"respuesta ilegible: {type(err).__name__}: {err}"
+        return Completeness(Status.UNREADABLE, expected, 0, detail)
 
     found = len(in_day)
     if not moments:

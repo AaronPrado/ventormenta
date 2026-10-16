@@ -13,3 +13,12 @@ COMMENT 'Ficheros crudos tal como llegan de cada fuente; inmutables. Un Volume p
 
 CREATE VOLUME IF NOT EXISTS ventormenta.raw.esios
 COMMENT 'Respuestas crudas de e·sios. Datos de Red Eléctrica: no se redistribuyen.';
+
+-- Lectura de las instantáneas para el vigilante de GitHub Actions. Los privilegios van al
+-- grupo, no al service principal: cambiar o rotar la identidad no toca este fichero. El
+-- grupo se crea en la configuración del workspace (Identity and access).
+-- USE CATALOG y USE SCHEMA solo permiten llegar al Volume. READ VOLUME se concede en el
+-- propio Volume y no en el esquema, donde se heredaría a los Volumes que se añadan después.
+GRANT USE CATALOG ON CATALOG ventormenta TO `ventormenta-watchers`;
+GRANT USE SCHEMA ON SCHEMA ventormenta.raw TO `ventormenta-watchers`;
+GRANT READ VOLUME ON VOLUME ventormenta.raw.esios TO `ventormenta-watchers`;

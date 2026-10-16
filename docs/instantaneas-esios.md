@@ -65,3 +65,9 @@ databricks bundle deploy -t prod
   dejar un job pidiendo a e·sios cada día. Después se borra con
   `databricks bundle destroy -t dev`, que no toca el Volume.
 - Una ejecución manual hace peticiones reales a e·sios: úsese solo para verificar.
+
+## Vigilancia
+
+Cada día a las 12:17 hora peninsular, un workflow de GitHub Actions comprueba desde fuera
+de Databricks que cada indicador tiene una captura completa anterior al corte, guarda la
+copia privada y abre un issue si falta alguna: [vigilante.md](vigilante.md).
