@@ -84,10 +84,18 @@ def parse_csv(data: bytes, day: date = DAY) -> list[i90.P48Value]:
 
 @pytest.mark.parametrize(
     ("cell", "value"),
-    [("0,025", 0.025), ("1.234,5", 1234.5), (" 12 ", 12.0), ("", 0.0), (2.5, 2.5), (3, 3.0)],
+    [("0,025", 0.025), ("1234,5", 1234.5), (" 12 ", 12.0), ("", 0.0), (2.5, 2.5), (3, 3.0)],
 )
 def test_number(cell: object, value: float) -> None:
     assert number(cell) == pytest.approx(value)
+
+
+@pytest.mark.parametrize("cell", ["0.025", "2.400", "1.234,5"])
+def test_number_rejects_dots(cell: object) -> None:
+    # Con punto, el total y los cuartos escalarían igual (un total de 2.400 con 96 cuartos de
+    # 0.025) y la comprobación del total no vería el error.
+    with pytest.raises(I90FormatError, match="punto"):
+        number(cell)
 
 
 @pytest.mark.parametrize("cell", ["abc", True])

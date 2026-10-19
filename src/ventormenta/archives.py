@@ -33,8 +33,9 @@ FORMAT_VERSION = 1
 PAUSE_SECONDS = 2.0
 # Tope de días por ejecución: como mucho dos peticiones a e·sios por día, 62 por ejecución.
 MAX_DAYS_PER_RUN = 31
-# Retraso con el que se publica el I90 de un día: uno más reciente aún no puede estar
-# publicado, y pedirlo sería pedir algo que no existe.
+# Retraso nominal de publicación del I90, el que declara el propio fichero («información a
+# los tres meses»). Un día más reciente no puede estar publicado, y pedirlo sería pedir algo
+# que no existe. Es una cota mínima: el retraso real observado llega a ser mayor.
 PUBLICATION_LAG = timedelta(days=90)
 _REDIRECT_CODES = frozenset({301, 302, 303, 307, 308})
 

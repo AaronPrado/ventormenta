@@ -107,8 +107,9 @@ def p48_rows(zip_data: bytes, day: date) -> Sequence[Row]:
 def number(cell: object) -> float:
     """Valor numérico de una celda: nativo en el XLS, texto con coma decimal en el CSV.
 
-    Una celda vacía es un programa nulo (0 MWh). En el texto se quitan los puntos antes de
-    cambiar la coma por punto, por si hubiera separador de miles.
+    Una celda vacía es un programa nulo (0 MWh). El texto no puede llevar punto: sería
+    ambiguo (¿decimal o separador de miles?) y la comprobación del total no lo detectaría,
+    porque un error de escala afectaría por igual al total y a los cuartos.
     """
     if isinstance(cell, bool):
         raise I90FormatError(f"celda booleana donde se esperaba un número: {cell}")
@@ -117,8 +118,10 @@ def number(cell: object) -> float:
     text = str(cell).strip()
     if not text:
         return 0.0
+    if "." in text:
+        raise I90FormatError(f"número con punto, ambiguo con la coma decimal: {text!r}")
     try:
-        return float(text.replace(".", "").replace(",", "."))
+        return float(text.replace(",", "."))
     except ValueError as err:
         raise I90FormatError(f"no es un número: {text!r}") from err
 
