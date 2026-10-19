@@ -5,7 +5,7 @@ import json
 import zipfile
 from collections.abc import Iterator
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from io import BytesIO
 from typing import Any, BinaryIO
 
@@ -17,7 +17,9 @@ from responses import matchers
 
 from ventormenta.archives import (
     FORMAT_VERSION,
+    MAX_DAYS_PER_RUN,
     PAUSE_SECONDS,
+    PUBLICATION_LAG,
     ArchiveError,
     DayState,
     IncompleteDayError,
@@ -26,7 +28,9 @@ from ventormenta.archives import (
     day_state,
     detail_params,
     download_day,
+    download_days,
     parse_detail,
+    plan_days,
 )
 from ventormenta.esios import ACCEPT, USER_AGENT, Clock, EsiosError
 
@@ -407,3 +411,104 @@ def test_non_https_redirect_is_refused(mocked: responses.RequestsMock) -> None:
     with pytest.raises(EsiosError, match="HTTPS"):
         run(volume)
     assert volume.files == {}
+
+
+# --- Plan de días ---
+
+TODAY = date(2026, 10, 19)
+
+
+def test_plan_days_includes_both_ends() -> None:
+    assert plan_days(date(2025, 1, 15), date(2025, 1, 17), TODAY) == [
+        date(2025, 1, 15),
+        date(2025, 1, 16),
+        date(2025, 1, 17),
+    ]
+
+
+def test_plan_days_allows_a_single_day() -> None:
+    assert plan_days(DAY, DAY, TODAY) == [DAY]
+
+
+def test_plan_days_allows_the_cap() -> None:
+    start = date(2025, 1, 1)
+    days = plan_days(start, start + timedelta(days=MAX_DAYS_PER_RUN - 1), TODAY)
+    assert len(days) == MAX_DAYS_PER_RUN
+
+
+def test_plan_days_rejects_more_than_the_cap() -> None:
+    start = date(2025, 1, 1)
+    with pytest.raises(ValueError, match="tope"):
+        plan_days(start, start + timedelta(days=MAX_DAYS_PER_RUN), TODAY)
+
+
+def test_plan_days_rejects_an_inverted_range() -> None:
+    with pytest.raises(ValueError, match="invertido"):
+        plan_days(date(2025, 1, 2), date(2025, 1, 1), TODAY)
+
+
+def test_plan_days_allows_the_last_publishable_day() -> None:
+    latest = TODAY - PUBLICATION_LAG
+    assert plan_days(latest, latest, TODAY) == [latest]
+
+
+def test_plan_days_rejects_days_not_yet_published() -> None:
+    not_yet = TODAY - PUBLICATION_LAG + timedelta(days=1)
+    with pytest.raises(ValueError, match="publicado"):
+        plan_days(not_yet - timedelta(days=1), not_yet, TODAY)
+
+
+# --- Varios días ---
+
+DAYS = (date(2025, 1, 15), date(2025, 1, 16), date(2025, 1, 17))
+
+
+def register_day(mocked: responses.RequestsMock, day: date) -> None:
+    """Ficha y zip de ``day``, con la URL de descarga que da e·sios para ese día."""
+    query = f"date={day.isoformat()}T23%3A59%3A59T%2B00%3A00&date_type=datos&locale=es"
+    mocked.get(
+        DETAIL_URL,
+        body=detail_body(day=day.isoformat(), url=f"{DOWNLOAD_PATH}?{query}"),
+        match=[matchers.query_param_matcher(detail_params(day))],
+    )
+    mocked.get(DOWNLOAD_URL, body=zip_bytes(), match=[matchers.query_string_matcher(query)])
+
+
+def run_days(volume: FakeVolume, sleeps: list[float]) -> Iterator[tuple[date, str | None]]:
+    moments = [datetime(2026, 10, 19, 11, 0, n, tzinfo=UTC) for n in range(4 * len(DAYS))]
+    session = requests.Session()
+    return download_days(
+        session, volume, ROOT, DAYS, TOKEN, clock=fixed_clock(*moments), sleep=sleeps.append
+    )
+
+
+def test_download_days_skips_done_days_and_pauses_only_between_requests(
+    mocked: responses.RequestsMock,
+) -> None:
+    done = f"{ROOT}/archives/34/data_date=2025-01-15"
+    volume = FakeVolume({f"{done}/a.zip": zip_bytes(), f"{done}/a.json": b"{}"})
+    register_day(mocked, DAYS[1])
+    register_day(mocked, DAYS[2])
+    sleeps: list[float] = []
+
+    results = list(run_days(volume, sleeps))
+
+    assert [day for day, _ in results] == list(DAYS)
+    assert results[0][1] is None
+    assert all(path is not None for _, path in results[1:])
+    # Ficha → zip en cada día descargado, y una pausa entre los dos días con peticiones;
+    # ninguna antes del segundo día, porque el primero no hizo peticiones.
+    assert sleeps == [PAUSE_SECONDS] * 3
+    assert len(mocked.calls) == 4
+
+
+def test_download_days_stops_at_the_first_error(mocked: responses.RequestsMock) -> None:
+    register_day(mocked, DAYS[0])
+    mocked.get(DETAIL_URL, status=503, match=[matchers.query_param_matcher(detail_params(DAYS[1]))])
+    results = run_days(FakeVolume(), [])
+
+    assert next(results)[0] == DAYS[0]
+    with pytest.raises(EsiosError):
+        next(results)
+    # El tercer día no se pide: no tiene respuesta registrada y la petición fallaría.
+    assert len(mocked.calls) == 3

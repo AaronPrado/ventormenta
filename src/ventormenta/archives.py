@@ -11,9 +11,9 @@ import json
 import posixpath
 import time
 import zipfile
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from enum import StrEnum
 from io import BytesIO
 from typing import Any, Protocol
@@ -31,6 +31,11 @@ I90_ARCHIVE_ID = 34
 FORMAT_VERSION = 1
 # Entre la ficha y el fichero: dos peticiones seguidas a e·sios, con pausa (uso responsable).
 PAUSE_SECONDS = 2.0
+# Tope de días por ejecución: como mucho dos peticiones a e·sios por día, 62 por ejecución.
+MAX_DAYS_PER_RUN = 31
+# Retraso con el que se publica el I90 de un día: uno más reciente aún no puede estar
+# publicado, y pedirlo sería pedir algo que no existe.
+PUBLICATION_LAG = timedelta(days=90)
 _REDIRECT_CODES = frozenset({301, 302, 303, 307, 308})
 
 Sleep = Callable[[float], None]
@@ -293,3 +298,49 @@ def download_day(
     sidecar = build_sidecar(archive_id, day, detail, file)
     files.upload(posixpath.join(directory, f"{stem}.json"), BytesIO(sidecar), overwrite=False)
     return zip_path
+
+
+def plan_days(start: date, end: date, today: date) -> list[date]:
+    """Días de ``start`` a ``end``, ambos incluidos, que puede pedir una ejecución.
+
+    Lanza ``ValueError`` si el rango está invertido, si pasa de ``MAX_DAYS_PER_RUN`` días o
+    si llega a días que aún no pueden estar publicados (más recientes que ``today`` menos
+    ``PUBLICATION_LAG``). Se valida todo antes de la primera petición.
+    """
+    if end < start:
+        raise ValueError(f"rango invertido: {start} > {end}")
+    count = (end - start).days + 1
+    if count > MAX_DAYS_PER_RUN:
+        raise ValueError(f"{count} días: el tope por ejecución es {MAX_DAYS_PER_RUN}")
+    latest = today - PUBLICATION_LAG
+    if end > latest:
+        raise ValueError(f"{end} aún no puede estar publicado: el último día posible es {latest}")
+    return [start + timedelta(days=n) for n in range(count)]
+
+
+def download_days(
+    session: requests.Session,
+    files: VolumeFiles,
+    root: str,
+    days: Iterable[date],
+    token: str,
+    *,
+    archive_id: int = I90_ARCHIVE_ID,
+    clock: Clock = utc_now,
+    sleep: Sleep = time.sleep,
+) -> Iterator[tuple[date, str | None]]:
+    """Descarga los días en orden y va dando ``(día, ruta del zip o None si ya estaba)``.
+
+    Pausa antes de cada día que sigue a uno con peticiones; los días ya descargados no hacen
+    ninguna y no esperan. El primer error corta la serie: los días siguientes no se piden, y
+    al repetir la ejecución la guarda de ``download_day`` salta los que ya están.
+    """
+    requested = False
+    for day in days:
+        if requested:
+            sleep(PAUSE_SECONDS)
+        path = download_day(
+            session, files, root, day, token, archive_id=archive_id, clock=clock, sleep=sleep
+        )
+        requested = path is not None
+        yield day, path
