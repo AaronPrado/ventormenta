@@ -122,6 +122,49 @@ parsear, junto con los datos de la captura. Lo escribe `ventormenta.snapshots`.
 - **`format_version`** sube si cambia la estructura del sobre, para que la capa bronze
   sepa cómo leer cada fichero.
 
+### Ficheros de archivos de e·sios (I90)
+
+```
+/Volumes/ventormenta/raw/esios/archives/<id>/data_date=<AAAA-MM-DD>/<AAAAMMDDTHHMMSSZ>.zip
+/Volumes/ventormenta/raw/esios/archives/<id>/data_date=<AAAA-MM-DD>/<AAAAMMDDTHHMMSSZ>.json
+```
+
+Por ejemplo, el I90 (archivo 34) del 15 de enero de 2025, recibido a las 12:31:36 UTC del
+19 de octubre de 2026:
+
+```
+/Volumes/ventormenta/raw/esios/archives/34/data_date=2025-01-15/20261019T123136Z.zip
+/Volumes/ventormenta/raw/esios/archives/34/data_date=2025-01-15/20261019T123136Z.json
+```
+
+- **Una carpeta por día de los datos, no por fecha de descarga**, al revés que las
+  instantáneas: cada día tiene un solo fichero, y saber si ya se descargó es listar una
+  carpeta. Lo escribe `ventormenta.archives`, y una carpeta con algo dentro no se vuelve a
+  pedir.
+- **El zip tal como llega**, para que Auto Loader (`binaryFile`) lo lea sin desenvolverlo.
+  El nombre es el instante UTC en que se recibió entero.
+- **Al lado, un JSON con el mismo nombre** (`format_version` 1) con:
+  - `archive_id` y `data_date`;
+  - `detail`: la ficha del archivo (`/archives/<id>`) **literal**, con su SHA-256, y los
+    datos de su petición (URL y parámetros, `requested_at`, `received_at`, código y cabecera
+    `Date`). La ficha trae la fecha de publicación que declara e·sios;
+  - `file`: los mismos datos de la petición del zip, el origen y la ruta a los que
+    redirigió e·sios si lo hizo (sin la query, que en una URL prefirmada lleva la firma), y
+    el tamaño y el SHA-256 del zip.
+- **El JSON se escribe el último**: un zip sin su JSON es una descarga a medias, que se
+  revisa a mano en lugar de repetirse.
+
+### Catálogos y fichas de e·sios
+
+```
+/Volumes/ventormenta/raw/esios/catalogs/archives/<AAAAMMDDTHHMMSSZ>.json
+/Volumes/ventormenta/raw/esios/catalogs/archives/<id>/date=<AAAA-MM-DD>/<AAAAMMDDTHHMMSSZ>.json
+```
+
+Respuestas de metadatos pedidas una sola vez en la exploración (el catálogo de archivos y
+fichas sueltas), guardadas literales. Van aparte de `archives/` para que esa carpeta solo
+tenga ficheros de datos.
+
 ## Cómo se crean
 
 Ejecutar [`infra/unity_catalog.sql`](../infra/unity_catalog.sql) en el editor SQL del

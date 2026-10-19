@@ -148,8 +148,8 @@ Cuantificación pública de recortes, generación "sin recortes", series o ranki
 
 ### 6.2 Reconstrucción de la serie gallega
 
-1. **Ingesta**: un fichero I90 por día, descargado una sola vez al hacerse público (D+90), en un Volume; Auto Loader detecta los nuevos.
-2. **Parseo**: programa final P48 por unidad y cuarto de hora con `python-esios`. 🧪 Si no lee bien los ficheros cuartohorarios, parser propio con pandas.
+1. **Ingesta**: un fichero I90 por día, descargado una sola vez al hacerse público (nominalmente a D+90; la latencia real está pendiente de medir, sección 7), en un Volume; Auto Loader detecta los nuevos.
+2. **Parseo**: programa final P48 por unidad de programación y cuarto de hora (hoja `I90DIA02`) con un parser propio, que lee las dos épocas del fichero: un libro XLS (2025) y un CSV por hoja (2026). `python-esios` no lee la época CSV (spike 2).
 3. **Mapeo**: tabla versionada que clasifica cada unidad eólica como gallega, de otra comunidad o mixta/desconocida, con su evidencia.
 4. **Estado operativo por unidad**: un P48 nulo sostenido marca la unidad como parada o desmontada (repotenciación en obras).
 5. **Agregación**: suma horaria de las unidades gallegas operativas.
@@ -182,7 +182,7 @@ Cuantificación pública de recortes, generación "sin recortes", series o ranki
 | Redespachos dentro del P48 | Objetivo declarado como generación programada; métricas estratificadas |
 | Repotenciación: en la ventana de datos domina la parada durante las obras; el +35% es la estimación de la Xunta tras terminarlas | Estado operativo por unidad; normalización por potencia mapeada operativa |
 | Operación reforzada desde el 28 de abril de 2025 | Corte de análisis |
-| Paso a programación cuartohoraria (octubre de 2025) | Cambio de esquema: lo detectan los tests de estructura |
+| Paso a programación cuartohoraria (octubre de 2025) | El P48 del I90 ya era cuartohorario antes; lo que cambia es el contenedor del fichero (XLS en 2025, un CSV por hoja en 2026). Lo cubren los tests de estructura, con las dos épocas |
 | Cambio de modelo meteorológico (IFS 50R1 desde el 12 de mayo de 2026) | Corte de análisis; caso descriptivo del monitor |
 
 ### 6.6 Spike 2 (decide la pista gallega)
@@ -210,7 +210,7 @@ Cuantificación pública de recortes, generación "sin recortes", series o ranki
 | Clase | Significado | Ejemplos |
 |---|---|---|
 | Observada | Hora de disponibilidad registrada al capturar | Datos capturados en vivo |
-| Inferida por regla | Hora de ejecución o publicación + latencia supuesta | Backfill de previsiones; etiquetas gallegas (D+90) |
+| Inferida por regla | Hora de ejecución o publicación + latencia supuesta | Backfill de previsiones; etiquetas gallegas (latencia de publicación del I90 pendiente de medir) |
 | No reproducible | No podía conocerse entonces por quien construye el sistema | Hindcasts anteriores a la operación del ciclo 49R1; previsiones de 9 km anteriores al 1 de octubre de 2025, cuando solo era abierta la de 0,25° |
 
 Cada fila archivada guarda además su **vintage**: la fecha en que ese archivo fue accesible. En el replay, un modelo reentrenado el día T solo usa filas cuyo vintage es anterior a T. Se publica qué fracción del entrenamiento y la evaluación cae en cada clase, y **las métricas principales se informan solo sobre el periodo reproducible**.
@@ -220,7 +220,7 @@ Cada fila archivada guarda además su **vintage**: la fecha en que ese archivo f
 - Ejecución fija de 00 UTC de D-1 para el día D; corte a las 12:00 hora peninsular (CET/CEST).
 - Días de cambio de hora: 23 o 25 horas, 92 o 100 cuartos de hora.
 - Columnas bitemporales: `valid_time` (en la clave primaria), `available_at` (clave temporal del join as-of contra la hora de decisión), `ingested_at`, vintage y clase de disponibilidad.
-- Latencia de etiqueta: el modelo gallego reentrenado el día T solo usa etiquetas anteriores a T-90.
+- Latencia de etiqueta: el modelo gallego reentrenado el día T solo usa etiquetas publicadas antes de T. La latencia nominal del I90 es de 90 días, pero los ficheros servidos tienen fechas de publicación entre 96 y 348 días después (spike 2): puede ser la fecha de una regeneración posterior. Cada I90 guarda la fecha de publicación que declara e·sios y la hora de descarga, y la latencia se fija al medirla.
 - **Un solo mecanismo point-in-time**: Feature Engineering de Unity Catalog si está disponible sin fricción; si no, as-of propio. Tests de propiedad y casos calculados a mano.
 - **Paridad entrenamiento-servicio**: en vivo se pide a la Single Runs API la misma ejecución de 00 UTC que en el backfill, nunca la API de previsión estándar, que combina ejecuciones.
 - Comparación con Red Eléctrica solo con instantáneas propias.

@@ -1,9 +1,9 @@
 # Fuentes de datos · e·sios
 
-Caracterización de los indicadores de e·sios (Red Eléctrica) que usa VenTormenta, con
-lo observado en peticiones reales: qué publica cada indicador, cuándo y si cambia
-después. Las decisiones que dependen de esto están en [el diseño](ventormenta-presentacion.md)
-(§5.1, §7.1–7.2 y §8.3).
+Caracterización de los indicadores y de los ficheros I90 de e·sios (Red Eléctrica) que usa
+VenTormenta, con lo observado en peticiones reales: qué publica cada fuente, cuándo, en qué
+forma y si cambia después. Las decisiones que dependen de esto están en
+[el diseño](ventormenta-presentacion.md) (§5.1, §7.1–7.2 y §8.3).
 
 ## Indicadores de previsión eólica 541 y 1777
 
@@ -101,3 +101,120 @@ cuartos de hora.
 - Cada valor trae, al menos, `datetime_utc`, `geo_id` y `value`.
 - `description` llega vacía en estos dos indicadores; se toma `name` como descripción
   oficial.
+
+## Ficheros I90 (archivo 34)
+
+Programas por unidad de programación de cada día, de los que sale la serie gallega. Primera
+caracterización, sobre un día por época.
+
+### Método
+
+- Notebook [`notebooks/exploracion/02_archivos_esios.py`](../notebooks/exploracion/02_archivos_esios.py):
+  catálogo de archivos y fichas del I90 de tres días, sin descargar los ficheros.
+- Job `i90_backfill` ([`notebooks/jobs/i90_backfill.py`](../notebooks/jobs/i90_backfill.py),
+  con la lógica en `ventormenta.archives`): descarga de los I90 del 15 de enero de 2025, el
+  11 de junio de 2025 y el 14 de enero de 2026, cada uno una sola vez.
+- Notebook [`notebooks/exploracion/03_estructura_i90.py`](../notebooks/exploracion/03_estructura_i90.py):
+  contenido de los tres ficheros, leído del Volume, y prueba del parser del P48
+  (`ventormenta.i90`) sobre ellos.
+- Todo el 19 de octubre de 2026: 10 peticiones a e·sios (el catálogo, 3 fichas de
+  exploración y, por cada día descargado, su ficha y su fichero).
+
+### Descarga
+
+- **El catálogo `/archives` sin parámetros no incluye el I90**: devuelve 26 archivos (con
+  `meta.size` 26 y sin paginación), todos con fecha del día de la petición. El id 34
+  (`I90DIA`, «Información de detalle por Unidad de Programación») se pide directamente.
+- **Dos pasos por fichero.** La ficha,
+  `GET /archives/34?date_type=datos&date=AAAA-MM-DDT00:00:00&locale=es`, trae
+  `archive_type: zip`, `horizon: D`, `publication_date` y la URL de descarga. Esa URL es una
+  ruta relativa de la API con la fecha como último segundo del día **en UTC** y una `T`
+  sobrante antes del desfase:
+  `/archives/34/download?date=2025-01-15T23%3A59%3A59T%2B00%3A00&date_type=datos&locale=es`.
+  La misma forma en los tres días.
+- **Redirección.** La descarga de los dos días de 2025 respondió con una redirección a una
+  URL prefirmada de Amazon S3 (`s3.eu-west-1.amazonaws.com`, carpeta `temp/`); la de 2026
+  se sirvió directamente. La redirección se sigue sin el token de e·sios
+  (`ventormenta.archives`).
+- **Tamaño:** zips de 7,9 MB y 11,7 MB (XLS de 35 MB y 53 MB descomprimidos) y de 2,1 MB
+  (CSV). Cada día tarda unos 40 segundos en el job, incluida la puesta en marcha.
+
+### Contenido
+
+| | 2025-01-15 y 2025-06-11 | 2026-01-14 |
+|---|---|---|
+| Contenedor | Un libro `I90DIA_AAAAMMDD.xls` con 40 hojas (`I90DIA00` a `I90DIA39`) | 43 ficheros `I90DIAnn_AAAAMMDD.csv` (`00` a `42`), uno por hoja |
+| Codificación | Tipos nativos de Excel (números, fechas) | UTF-8 con BOM, separador `;`, coma decimal, fin de línea CRLF |
+| Índice (hoja 00) | Fecha del informe, fecha de publicación y contenido del libro | Igual, con las fechas en texto (`14-enero-2026`) |
+
+- **La numeración de las hojas cambia entre épocas** (por ejemplo, la 26 es el PBF en el
+  XLS y el PDBF en el CSV; la 04 está reservada en el XLS). El P48 es la **hoja 02,
+  «Resultado de la programación del P48», en las dos**.
+- Ninguna hoja agrega por provincia o zona, según sus títulos. Solo la 16
+  («Indisponibilidades en Unidades Físicas») menciona unidades físicas.
+- Candidatas para identificar redespachos, sin revisar: la 03 (restricciones técnicas del
+  PDBF o del mercado diario) y la 08 (restricciones en tiempo real).
+
+#### Hoja del P48
+
+- Tres filas de cabecera (`Indicadores` → `Programa (MWh)`, `Dia` → fecha del informe,
+  `Programa` → `P48`) y la fila de columnas: `Unidad de Programación`, `Tipo Oferta`,
+  `Cuarto de Hora del dia`, `Total` y los cuartos de hora `1` a `96`.
+- **Una fila por unidad de programación**, no por unidad física: 2.330, 2.516 y 2.713
+  unidades en las tres fechas. Ninguna repetida.
+- **Cuartohoraria en las tres fechas**, también en enero de 2025: el paso del mercado a
+  cuartos de hora en octubre de 2025 no cambió la resolución del P48 en el I90; lo que
+  cambia entre épocas es el contenedor.
+- Energía en **MWh por cuarto de hora** (0,025 MWh en un cuarto equivalen a 0,1 MW).
+  `Total` es la suma de los 96 cuartos en todas las filas, al milésimo.
+- `Tipo Oferta` es un código numérico, uno por unidad: el 10 reúne más de la mitad de las
+  unidades (1.554, 1.719 y 1.886), seguido del 8 (365–399) y el 2 (144–147). El 17 solo
+  aparece en 2026. Su significado no figura en el fichero.
+- El parser propio (`ventormenta.i90`) lee las tres fechas con las mismas comprobaciones:
+  día del informe, número de cuartos según la duración real del día, unidades únicas y
+  `Total` igual a la suma. `python-esios` lee el I90 en XLS (`I90Book`), pero no tiene
+  lector para la época CSV.
+
+### Fecha de publicación
+
+| Día de los datos | `publication_date` de la ficha | Retraso |
+|---|---|---|
+| 2025-01-15 | 2025-12-29 | 348 días |
+| 2025-06-11 | 2026-01-22 | 225 días |
+| 2026-01-14 | 2026-06-11 | 148 días |
+| 2026-07-15 | 2026-10-19 (el día de la petición) | 96 días |
+
+- La fecha de la ficha coincide con la «Fecha de publicación» de la hoja 00 y con la fecha
+  interna de los ficheros del zip. La del 15 de enero de 2025 era la misma en las dos fichas
+  pedidas, con unas horas de diferencia.
+- El título de la hoja 00 dice «Información a los tres meses (90 días)», pero el fichero que
+  se sirve se generó entre 96 y 348 días después del día de los datos. Hay dos lecturas, sin
+  resolver: que la fecha sea la de la **última regeneración** del fichero (la primera
+  publicación habría sido hacia los 90 días y el fichero se rehace después), o que la
+  publicación sea **más tardía** de lo que dice el título.
+- Cada descarga guarda la ficha literal y la hora de recepción en el JSON lateral del zip,
+  así que la evidencia queda junto a cada fichero.
+
+### Implicaciones
+
+- **La disponibilidad de la etiqueta gallega no puede darse por «D+90».** Si los ficheros
+  se regeneran, lo descargado hoy de días antiguos es la última versión, no la que existía a
+  los 90 días; si se publican más tarde, la latencia es mayor. Afecta a la clase de
+  disponibilidad y al vintage de los I90 (honestidad temporal, en el diseño) y a la latencia
+  del replay.
+- **El parser es propio y lee las dos épocas**, en lugar de `python-esios`, que el diseño
+  preveía para el parseo:
+  la hoja del P48 tiene la misma forma en las dos, así que un solo camino de lectura sirve
+  para ambas.
+- **Del P48 por unidad de programación a la potencia por unidad física** hacen falta los
+  listados de unidades, para el mapeo y la cobertura en potencia.
+
+### Pendiente de observar
+
+- La ficha del 15 de julio de 2026 de nuevo, una o dos semanas después de la primera: si su
+  `publication_date` cambia, es una fecha de regeneración.
+- Si el P48 de un día cambia entre regeneraciones.
+- Desde cuándo llegan los I90 en CSV, y si los días antiguos pasan a CSV al regenerarse.
+- Días de cambio de hora: si la hoja del P48 trae 92 o 100 cuartos.
+- Celdas vacías en la hoja del P48 (el parser las lee como 0 MWh).
+- El significado de los códigos de `Tipo Oferta`.

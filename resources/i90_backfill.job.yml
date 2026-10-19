@@ -1,0 +1,42 @@
+resources:
+  jobs:
+    i90_backfill:
+      name: i90_backfill
+      description: >-
+        Descarga al Volume los I90 de e·sios (archivo 34) de un rango de días, cada uno una
+        sola vez. Sin programación: se lanza a mano con start_date y end_date.
+
+      # Una ejecución a la vez: dos en paralelo verían el mismo día vacío y lo pedirían dos
+      # veces a e·sios.
+      max_concurrent_runs: 1
+      timeout_seconds: 3600
+
+      # Parámetros del job: llegan al notebook como widgets con el mismo nombre. Vacíos por
+      # defecto, para que una ejecución sin rango falle antes de pedir nada.
+      parameters:
+        - name: start_date
+          default: ""
+        - name: end_date
+          default: ""
+
+      tasks:
+        - task_key: i90_backfill
+          notebook_task:
+            notebook_path: ../notebooks/jobs/i90_backfill.py
+            base_parameters:
+              volume_root: ${var.esios_volume_root}
+          environment_key: default
+          # La auto-optimización serverless añade reintentos sin número documentado; cada uno
+          # repetiría peticiones a e·sios.
+          disable_auto_optimization: true
+          # Sin reintentos: el primer fallo corta la ejecución y se relanza a mano. La guarda
+          # salta los días ya descargados y una carpeta a medias se revisa a mano.
+          max_retries: 0
+          timeout_seconds: 3600
+
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "6"
+            dependencies:
+              - ../dist/*.whl
