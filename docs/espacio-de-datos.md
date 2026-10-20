@@ -154,16 +154,46 @@ Por ejemplo, el I90 (archivo 34) del 15 de enero de 2025, recibido a las 12:31:3
 - **El JSON se escribe el último**: un zip sin su JSON es una descarga a medias, que se
   revisa a mano en lugar de repetirse.
 
+### Listados de unidades de e·sios
+
+```
+/Volumes/ventormenta/raw/esios/archives/<id>/capture_date=<AAAA-MM-DD>/<AAAAMMDDTHHMMSSZ>.data.json
+/Volumes/ventormenta/raw/esios/archives/<id>/capture_date=<AAAA-MM-DD>/<AAAAMMDDTHHMMSSZ>.json
+```
+
+Por ejemplo, el listado de unidades de programación (archivo 82) recibido a las 13:45:39 UTC
+del 20 de octubre de 2026:
+
+```
+/Volumes/ventormenta/raw/esios/archives/82/capture_date=2026-10-20/20261020T134539Z.data.json
+/Volumes/ventormenta/raw/esios/archives/82/capture_date=2026-10-20/20261020T134539Z.json
+```
+
+- **Una carpeta por fecha de captura, como las instantáneas, no por día de los datos.** Los
+  listados de unidades (archivos 81 y 82) no tienen fecha: cada descarga es la foto del
+  momento. Van junto a los demás archivos de e·sios, y `capture_date` frente a `data_date`
+  dice cuál es cuál.
+- **El cuerpo JSON tal como llega**, en `<instante>.data.json`.
+- **Al lado, `<instante>.json`** (`format_version` 1), como el del I90: `archive_id`,
+  `capture_date`, la ficha del archivo **literal** con su SHA-256 y la ruta en la que se
+  guardó, y los datos de la petición del listado (URL y parámetros, `requested_at`,
+  `received_at`, código, cabecera `Date`, tamaño y SHA-256). `received_at` es el vintage del
+  listado.
+- **Se escribe el último**, como en el I90: un cuerpo sin su JSON es una escritura a medias.
+- En la exploración, un listado con alguna captura no se vuelve a pedir.
+
 ### Catálogos y fichas de e·sios
 
 ```
 /Volumes/ventormenta/raw/esios/catalogs/archives/<AAAAMMDDTHHMMSSZ>.json
+/Volumes/ventormenta/raw/esios/catalogs/archives/<id>/<AAAAMMDDTHHMMSSZ>.json
 /Volumes/ventormenta/raw/esios/catalogs/archives/<id>/date=<AAAA-MM-DD>/<AAAAMMDDTHHMMSSZ>.json
 ```
 
 Respuestas de metadatos pedidas una sola vez en la exploración (el catálogo de archivos y
-fichas sueltas), guardadas literales. Van aparte de `archives/` para que esa carpeta solo
-tenga ficheros de datos.
+fichas sueltas), guardadas literales. Las fichas sin fecha (como las de los listados de
+unidades) van directamente en la carpeta del archivo; las de un día, en su `date=`. Van aparte
+de `archives/` para que esa carpeta solo tenga ficheros de datos.
 
 ## Cómo se crean
 
