@@ -1,8 +1,8 @@
 # Fuentes de datos · e·sios
 
-Caracterización de los indicadores y de los ficheros I90 de e·sios (Red Eléctrica) que usa
-VenTormenta, con lo observado en peticiones reales: qué publica cada fuente, cuándo, en qué
-forma y si cambia después. Las decisiones que dependen de esto están en
+Caracterización de los indicadores, los ficheros I90 y los listados de unidades de e·sios
+(Red Eléctrica) que usa VenTormenta, con lo observado en peticiones reales: qué publica cada
+fuente, cuándo, en qué forma y si cambia después. Las decisiones que dependen de esto están en
 [el diseño](ventormenta-presentacion.md) (§5.1, §7.1–7.2 y §8.3).
 
 ## Indicadores de previsión eólica 541 y 1777
@@ -217,4 +217,124 @@ caracterización, sobre un día por época.
 - Desde cuándo llegan los I90 en CSV, y si los días antiguos pasan a CSV al regenerarse.
 - Días de cambio de hora: si la hoja del P48 trae 92 o 100 cuartos.
 - Celdas vacías en la hoja del P48 (el parser las lee como 0 MWh).
-- El significado de los códigos de `Tipo Oferta`.
+- El significado oficial de los códigos de `Tipo Oferta` (la lectura inferida de los
+  listados de unidades está en la sección siguiente).
+
+## Listados de unidades (archivos 81 y 82)
+
+Identificación, tipo de producción y potencia de las unidades de programación (UP) y de las
+unidades físicas (UF), para filtrar las UP eólicas del P48 y ponderar por MW. Primera
+caracterización, sobre una sola captura.
+
+### Método
+
+- Notebook [`notebooks/exploracion/04_listados_unidades.py`](../notebooks/exploracion/04_listados_unidades.py):
+  fichas y descarga de los dos listados, una vez cada uno, y caracterización leída del
+  Volume, cruzada con el P48 de los tres I90 descargados (2025-01-15, 2025-06-11 y
+  2026-01-14).
+- Localización sin peticiones a ciegas: el catálogo `/archives` ya guardado no los incluye
+  (sus 26 archivos son subastas, descargos, planes de mantenimiento, liquidaciones y totales
+  del P48). Las páginas públicas [Unidades de programación](https://www.esios.ree.es/es/unidades-de-programacion)
+  y [Unidades físicas](https://www.esios.ree.es/es/unidades-fisicas) de e·sios cargan sus
+  tablas de `/archives/82/download_json?locale=es` y `/archives/81/download_json`.
+- Todo el 20 de octubre de 2026: 5 peticiones a e·sios (las 2 fichas, 1 descarga fallida con
+  la URL de la ficha y los 2 listados).
+
+### Descarga
+
+- **Fichas** (`GET /archives/{81,82}?locale=es`): `archive_type: json`, `horizon: NA`, sin
+  `date_type`, `date_times` ni `publication_date`. Su `updated_at` (2015) es de la
+  definición del archivo, no de los datos.
+- **La URL de descarga de la ficha no funciona.** Trae
+  `/archives/82/json_download_json?date=2026-10-20T23%3A59%3A59T%2B0200&locale=es` (fecha
+  del día de la petición, en hora peninsular y con la `T` sobrante del I90), y responde
+  **404**. Se usan las URL de la web, sin fecha.
+- **Sin versiones por fecha:** nada en la ficha ni en la web indica que se pueda pedir el
+  listado de un día pasado. Cada descarga es la foto del momento, y su vintage es la hora de
+  recepción (disponibilidad observada).
+- Respuestas JSON de 1,4 MB (UP) y 1,7 MB (UF), servidas directamente, sin redirección.
+
+### Contenido
+
+| | UP (archivo 82) | UF (archivo 81) |
+|---|---|---|
+| Registros | 3.931, bajo la clave `UnidadesProgramacion` | 6.673, bajo `UnidadesFisicas` |
+| Campos | Código de UP, descripciones corta y larga, código EIC, tipo de producción, negocio (compra o venta), ámbito de actuación, zona de regulación, tipo de UP, sujeto del mercado, potencia máxima MW | Código de UF, código EIC, descripciones corta y larga, tipo de producción, vinculación con sujeto del mercado, vinculación con UP, potencia máxima MW |
+| Forma | Un registro por código, sin repetidos; los mismos campos en todos; todo texto | Igual |
+
+- **La potencia es texto con coma decimal y punto de miles** («3,8», «9.999,0»). Se lee con
+  un formato estricto, que rechaza un punto sin coma por ambiguo (como en el P48): ningún
+  valor de los dos listados se sale de él, y ninguno está vacío.
+- «Ámbito de actuación» no sale en la tabla de la web: España (3.844 UP) y las
+  interconexiones con Francia, Portugal, Marruecos y Andorra.
+- **El tipo de producción se toma de la UP.** El de las UF es menos fiable: 3 UF tienen el
+  tipo `'0'`, los nombres no coinciden con los de las UP («Ciclo combinado» frente a «Ciclo
+  Combinado») e importación y exportación de Marruecos y Andorra aparecen intercambiadas
+  entre los dos listados.
+
+### UP eólicas y relación UP → UF
+
+- **«Eólica terrestre»: 462 UP con 32.070,4 MW. «Eólica marina»: 1 UP de 2 MW.** Hay además
+  tres tipos híbridos (38 UP en total), que no son eólicos en conjunto.
+- **Cada UF apunta exactamente a una UP del listado**: ninguna sin UP ni con una UP que no
+  esté en él.
+- **En todas las UP eólicas e híbridas, la potencia de la UP es la suma de la de sus UF**
+  (al décimo de MW).
+- **Las UP eólicas tienen de 1 a 181 UF:** 365 de las 462 tienen una sola; el resto se
+  reparte hasta una UP de 181 UF. Una UP con muchas UF puede reunir parques de varias
+  comunidades.
+- **Las UF eólicas suman 32.232,5 MW, 162,1 MW más que las UP eólicas:** son 4 UF eólicas
+  dentro de UP híbridas (2 en «Híbrida renovable», 80,3 MW; 2 en «Híbrida renovable-
+  almacenamiento», 81,8 MW). No hay UF de otros tipos dentro de UP eólicas.
+
+### Cobertura de las UP del P48
+
+Qué parte de las UP de cada P48 aparece en la captura del 20 de octubre de 2026, por número y
+por energía (suma de |MWh| del día):
+
+| Día | UP del P48 en el listado | Energía cubierta | UP eólicas encontradas |
+|---|---|---|---|
+| 2025-01-15 | 2.048 de 2.330 | 97,20 % | 288 |
+| 2025-06-11 | 2.272 de 2.516 | 97,81 % | 304 |
+| 2026-01-14 | 2.571 de 2.713 | 99,00 % | 356 |
+
+- Las que faltan son sobre todo unidades de venta de generación (`Tipo Oferta` 10: 234, 206
+  y 116), y faltan más cuanto más antiguo es el día: bajas y cambios de unidad desde
+  entonces. Es el coste de usar la foto actual para días pasados.
+- **No se sabe cuántas de las que faltan son eólicas**: sin el listado no hay tipo de
+  producción, y el `Tipo Oferta` no basta (hay eólicas con el 10 y con el 2).
+
+### `Tipo Oferta` del P48 (lectura inferida)
+
+Cruzando el código de cada UP del P48 con su negocio y su tipo de UP en el listado, en los
+tres días, y, para las de generación, con su tipo de producción en el P48 del 2026-01-14 (de
+ahí los recuentos de eólicas). No es una definición oficial.
+
+| Código | Unidades | Código | Unidades |
+|---|---|---|---|
+| 1 | Venta · generación convencional (ciclo combinado, gas natural, hidráulica UGH, nuclear, turbinación de bombeo, carbón) | 9 | Comercializador internacional |
+| 2 | Venta · renovables, cogeneración y residuos (4 UP eólicas) | 10 | Venta · renovables, cogeneración y residuos (352 UP eólicas) y, en algún caso, unidades híbridas |
+| 3 | Compra · consumo de bombeo | 11 | Compra · servicios auxiliares |
+| 5 | Unidad instrumental internacional | 14 | Saldo de acoplamiento de mercado |
+| 6 | Compra · comercializador de referencia | 15 | Compra · enlace con Baleares |
+| 7 | Compra · consumo directo en mercado | 17 | Almacenamiento (solo en 2026) |
+| 8 | Compra · comercializadores | 18 | Venta · unidades híbridas |
+
+### Implicaciones
+
+- **Filtro eólico:** las UP de tipo «Eólica terrestre» o «Eólica marina», más las UP
+  híbridas con alguna UF eólica, contando solo la potencia de esas UF.
+- **Ponderación por MW:** la potencia de la UP vale para las UP eólicas; en las híbridas, la
+  de sus UF eólicas.
+- **El mapeo tendrá que bajar a UF en las UP con varias UF**, que pueden ser mixtas entre
+  comunidades.
+- **El listado es una foto, no un historial.** Para los meses de 2025 faltan unidades que ya
+  no existen. La capa de cobertura en potencia lo medirá; repetir la captura de forma
+  periódica construiría el historial que la fuente no da.
+
+### Pendiente de observar
+
+- Si el listado incluye unidades fuera de la península (el ámbito «España» no lo distingue).
+- La diferencia entre los `Tipo Oferta` 2 y 10.
+- Si la `date` de `json_download_json` o de `download_json` da versiones pasadas: no se ha
+  probado, porque sería una petición a ciegas.
