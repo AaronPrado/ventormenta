@@ -69,4 +69,38 @@ Se publican junto al resultado para interpretarlo:
 
 ## Resultado
 
-Pendiente de medir.
+Medido el 21 de octubre de 2026 con los 92 I90 de los tres meses, el listado de unidades de
+programación del 20 de octubre de 2026 y el indicador 10037 descargado ese mismo día.
+
+| Mes | `P` (GWh) | `M` (GWh) | `d` |
+|---|---|---|---|
+| Enero de 2025 | 6.777,1 | 7.492,2 | −9,54 % |
+| Junio de 2025 | 2.770,7 | 3.077,2 | −9,96 % |
+| Enero de 2026 | 7.963,1 | 8.208,8 | −2,99 % |
+
+**Tolerancia: 5,00 %** (el tope: 9,96 % + 3 puntos lo supera).
+
+**Aviso:** el máximo de `|d|` pasa de 2 puntos, y no solo recorta el margen del mapeo: los
+dos meses de 2025 quedan, ya en la península, por encima del tope. El método construido con
+las unidades del listado actual no cabe en su propia tolerancia en esos meses.
+
+### Medidas de apoyo
+
+| Mes | P48 fuera del listado | `d` con el 10010 | P48 de las híbridas | Horas sin valor del 10037 |
+|---|---|---|---|---|
+| Enero de 2025 | 9,88 % | +0,37 % | 12,5 GWh | 687 |
+| Junio de 2025 | 7,88 % | −2,26 % | 2,7 GWh | 1.059 |
+| Enero de 2026 | 5,91 % | +3,10 % | 19,6 GWh | 370 |
+
+- **Casi toda la diferencia es el hueco del listado, no el método.** Con el P48 eólico que
+  agrega Red Eléctrica (10010), programa y medida difieren entre −2,26 % y +3,10 %; con las
+  unidades del listado, entre −2,99 % y −9,96 %.
+- **El hueco es compatible con unidades que ya no están en el listado.** El P48 de las
+  unidades de programación del I90 que no aparecen en el listado, con `Tipo Oferta` 2 o 10
+  (los de las eólicas, compartidos con otras renovables, cogeneración y residuos), es una cota
+  superior de la eólica que falta, y supera al hueco en los tres meses: 1.112,8 frente a
+  743,1 GWh en enero de 2025, 928,4 frente a 236,9 en junio de 2025 y 640,8 frente a 499,9 en
+  enero de 2026. Son 260, 228 y 133 unidades.
+- **El hueco no se limita a 2025:** en enero de 2026 falta el 5,91 % del P48 eólico, más de
+  lo que hacía esperar la cobertura de la energía total de un día de ese mes (99 %).
+- Las horas sin valor del 10037 se cuentan como 0 MWh, como fija la regla.
