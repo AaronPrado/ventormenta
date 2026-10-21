@@ -53,8 +53,8 @@ tolerancia = mín( máx(|d_ene2025|, |d_jun2025|, |d_ene2026|) + 3 puntos , 5 % 
   queden dentro de la tolerancia, así que esta debe cubrir el peor mes del propio método.
 - La tolerancia se calcula con los valores sin redondear y **se aplica el valor publicado,
   con dos decimales** (en puntos porcentuales).
-- **Aviso:** si el máximo de `|d_m|` llega a 2 puntos, el margen que queda para el mapeo es
-  menor que 3 puntos, y se dice al publicar el valor.
+- **Aviso:** si el máximo de `|d_m|` pasa de 2 puntos, el tope deja para el mapeo menos de 3
+  puntos de margen, y se dice al publicar el valor.
 
 ## Medidas de apoyo (no entran en la regla)
 
