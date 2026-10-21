@@ -182,18 +182,37 @@ del 20 de octubre de 2026:
 - **Se escribe el último**, como en el I90: un cuerpo sin su JSON es una escritura a medias.
 - En la exploración, un listado con alguna captura no se vuelve a pedir.
 
+### Rangos de indicadores de e·sios
+
+```
+/Volumes/ventormenta/raw/esios/indicator_ranges/<id>/month=<AAAA-MM>/<AAAAMMDDTHHMMSSZ>.json
+```
+
+Un mes peninsular completo de un indicador, pedido una sola vez (por ejemplo, la producción
+eólica medida, 10037, y el P48 eólico, 10010, de los meses de desarrollo).
+
+- **Aparte de `indicators/`**, que guarda las instantáneas diarias de la previsión: esas
+  llevan `target_date`, las lee el vigilante y su vintage es la hora de captura antes del
+  corte. Un mes histórico es otra cosa, y mezclarlos confundiría a bronze.
+- **El mismo sobre que las instantáneas** (`format_version` 1, cuerpo literal y su SHA-256,
+  `requested_at` y `received_at`), con `month` en lugar de `target_date` y el rango en los
+  parámetros de la petición. `received_at` es el vintage: la medida se revisa al llegar nuevas
+  medidas.
+- Una carpeta con algo dentro no se vuelve a pedir.
+
 ### Catálogos y fichas de e·sios
 
 ```
+/Volumes/ventormenta/raw/esios/catalogs/indicators/<AAAAMMDDTHHMMSSZ>.json
 /Volumes/ventormenta/raw/esios/catalogs/archives/<AAAAMMDDTHHMMSSZ>.json
 /Volumes/ventormenta/raw/esios/catalogs/archives/<id>/<AAAAMMDDTHHMMSSZ>.json
 /Volumes/ventormenta/raw/esios/catalogs/archives/<id>/date=<AAAA-MM-DD>/<AAAAMMDDTHHMMSSZ>.json
 ```
 
-Respuestas de metadatos pedidas una sola vez en la exploración (el catálogo de archivos y
-fichas sueltas), guardadas literales. Las fichas sin fecha (como las de los listados de
-unidades) van directamente en la carpeta del archivo; las de un día, en su `date=`. Van aparte
-de `archives/` para que esa carpeta solo tenga ficheros de datos.
+Respuestas de metadatos pedidas una sola vez en la exploración (los catálogos de indicadores
+y de archivos y fichas sueltas), guardadas literales. Las fichas sin fecha (como las de los
+listados de unidades) van directamente en la carpeta del archivo; las de un día, en su
+`date=`. Van aparte de `archives/` para que esa carpeta solo tenga ficheros de datos.
 
 ## Cómo se crean
 

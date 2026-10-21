@@ -96,11 +96,74 @@ cuartos de hora.
 - `start_date` y `end_date` en ISO 8601 con desfase horario delimitan el rango en hora
   peninsular.
 - Sin `time_trunc`, la API devuelve la granularidad nativa del indicador.
-- `values_updated_at` es del indicador entero, no de cada día, y va en hora peninsular
-  con desfase.
+- `values_updated_at` va en hora peninsular con desfase. **Cambia con el rango pedido**, así
+  que no es una fecha del indicador entero, pero tampoco la última actualización de los
+  valores del rango: en el 10010, el de junio de 2025 es el 2 de junio de 2025, anterior a
+  casi todo el mes. Su significado está sin aclarar y no se usa.
 - Cada valor trae, al menos, `datetime_utc`, `geo_id` y `value`.
 - `description` llega vacía en estos dos indicadores; se toma `name` como descripción
   oficial.
+
+## Producción eólica medida y P48 eólico (indicadores 10037 y 10010)
+
+Referencias peninsulares para medir la diferencia mensual entre el programa P48 y la
+producción real, de la que sale la tolerancia de la serie gallega
+([tolerancia-mensual.md](tolerancia-mensual.md)).
+
+### Método
+
+- Notebook [`notebooks/exploracion/05_tolerancia_mensual.py`](../notebooks/exploracion/05_tolerancia_mensual.py),
+  en Databricks serverless.
+- El catálogo `/indicators` (1.983 indicadores, 63 con «eólic» en el nombre), pedido una vez
+  y guardado literal; los candidatos se eligieron leyendo sus descripciones, sin probar ids.
+- Una petición por indicador y mes (enero y junio de 2025, enero de 2026), sin parámetros de
+  ámbito ni `time_trunc`, con el mes cortado en hora peninsular. Todo el 21 de octubre de
+  2026: 7 peticiones a e·sios (el catálogo y 6 meses).
+
+### Candidatos del catálogo
+
+| Id | Nombre | Lo que dice su descripción |
+|---|---|---|
+| 551 | Generación T.Real eólica | Telemedida en tiempo real, datos peninsulares, cada 5 minutos |
+| 1745 / 2038 | Generación T.Real eólica SNP / nacional | Sistemas no peninsulares / nacional |
+| 10037 | Generación medida Eólica | Medidas de generación, desglosables por provincias; se publican desde el mes siguiente y se actualizan al llegar nuevas medidas |
+| 1159 / 1160 | Generación medida Eólica terrestre / marina | Desglose del 10037 |
+| 10010 | Generación programada P48 Eólica | Programa P48 por tipo de producción; se actualiza cada hora y hacia las 05:00 cierra el día anterior |
+| 82 / 83 | Generación programada P48 Eólica terrestre / marina | Desglose del 10010, por unidades de programación de ese tipo de producción |
+
+Se eligió la **10037** (medida, no telemedida) como producción real, y el **10010** como
+referencia del P48 eólico completo.
+
+### Resultados
+
+| | 10037 | 10010 |
+|---|---|---|
+| Magnitud y paso | Energía (MWh), horaria | Energía (MWh), cuartohoraria |
+| Ámbito por defecto | Desglosado en 42 provincias peninsulares, sin total; ni Baleares ni Canarias | Un solo valor, Península |
+| Valores por mes | Unas 29.000–31.000 (provincias × horas) | 2.976 (enero) y 2.880 (junio): todos los cuartos |
+| `values_updated_at` de cada mes | Mayo de 2026 (los dos de 2025) y septiembre de 2026 (enero de 2026) | 23 de enero y 2 de junio de 2025, dentro del propio mes; marzo de 2026 para enero de 2026 |
+
+- **Horas sin valor en el 10037:** faltan horas en provincias de poca eólica (370 a 1.059
+  por mes, de unas 31.000), más en junio que en enero. La lectura es que una hora sin valor
+  es una hora sin producción medida.
+- **La producción medida peninsular es la suma de las provincias**, porque todas son
+  peninsulares.
+- **Cada mes se guarda en un sobre** con el cuerpo literal y su hora de recepción: la medida
+  se revisa al llegar nuevas medidas, y la versión usada es la de esa hora.
+
+### Implicaciones
+
+- **Existe una producción eólica medida horaria por provincia**, también para Galicia. Qué
+  papel tiene en la validación de la serie gallega se decide después de congelar el mapeo,
+  para que no influya en él.
+- **El P48 eólico agregado (10010) permite medir cuánto P48 falta en el listado de
+  unidades**, sin depender de REData (resultado en [tolerancia-mensual.md](tolerancia-mensual.md)).
+
+### Pendiente de observar
+
+- Si una hora sin valor del 10037 es siempre producción nula o puede ser una medida pendiente.
+- Si el 10010 incluye la parte eólica de las unidades híbridas.
+- Qué fecha es `values_updated_at` (ver «Detalles de la respuesta de la API»).
 
 ## Ficheros I90 (archivo 34)
 
