@@ -70,7 +70,8 @@ Se publican junto al resultado para interpretarlo:
 ## Resultado
 
 Medido el 21 de octubre de 2026 con los 92 I90 de los tres meses, el listado de unidades de
-programación del 20 de octubre de 2026 y el indicador 10037 descargado ese mismo día.
+programación del 20 de octubre de 2026 y los indicadores 10037 y 10010, descargados ese mismo
+día.
 
 | Mes | `P` (GWh) | `M` (GWh) | `d` |
 |---|---|---|---|

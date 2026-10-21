@@ -210,9 +210,9 @@ eólica medida, 10037, y el P48 eólico, 10010, de los meses de desarrollo).
 ```
 
 Respuestas de metadatos pedidas una sola vez en la exploración (los catálogos de indicadores
-y de archivos y fichas sueltas), guardadas literales. Las fichas sin fecha (como las de los listados de
-unidades) van directamente en la carpeta del archivo; las de un día, en su `date=`. Van aparte
-de `archives/` para que esa carpeta solo tenga ficheros de datos.
+y de archivos y fichas sueltas), guardadas literales. Las fichas sin fecha (como las de los
+listados de unidades) van directamente en la carpeta del archivo; las de un día, en su
+`date=`. Van aparte de `archives/` para que esa carpeta solo tenga ficheros de datos.
 
 ## Cómo se crean
 
