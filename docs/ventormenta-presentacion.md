@@ -150,13 +150,14 @@ Cuantificación pública de recortes, generación "sin recortes", series o ranki
 
 1. **Ingesta**: un fichero I90 por día, descargado una sola vez al hacerse público (nominalmente a D+90; la latencia real está pendiente de medir, sección 7), en un Volume; Auto Loader detecta los nuevos.
 2. **Parseo**: programa final P48 por unidad de programación y cuarto de hora (hoja `I90DIA02`) con un parser propio, que lee las dos épocas del fichero: un libro XLS (2025) y un CSV por hoja (2026). `python-esios` no lee la época CSV (spike 2).
-3. **Mapeo**: tabla versionada que clasifica cada unidad eólica como gallega, de otra comunidad o mixta/desconocida, con su evidencia.
+3. **Mapeo**: tabla versionada que clasifica cada unidad eólica como gallega, de otra comunidad o mixta/desconocida, con su evidencia. Las unidades eólicas son las del listado de unidades de programación y las de fuera de él cuyo P48 cierra el P48 eólico peninsular de Red Eléctrica (indicador 10010). Estas últimas se ubican por la vecindad de su P48 con las del listado ya mapeadas, y quedan como desconocidas si la vecindad no supera su validación. Regla y resultados: `docs/unidades-fuera-del-listado.md`.
 4. **Estado operativo por unidad**: un P48 nulo sostenido marca la unidad como parada o desmontada (repotenciación en obras).
 5. **Agregación**: suma horaria de las unidades gallegas operativas.
 
 ### 6.3 Protocolo del mapeo (garantía de que REData no influye)
 
 - El mapeo se **congela con hash y tag antes de calcular cualquier contraste con REData**.
+- Las unidades de fuera del listado se identifican y se ubican **solo con datos peninsulares o de cada unidad**, antes de congelar; ninguna cifra gallega interviene.
 - Cualquier cambio posterior solo se admite con evidencia externa anotada en la tabla y como versión nueva. Se publica el historial de versiones con el contraste de cada una.
 - Los tres meses del spike 2 se publican como **meses de desarrollo**, fuera del criterio 1.
 - **Muestra de referencia estratificada**: unidades clasificadas como gallegas, como de fuera y como desconocidas, verificadas con evidencia que el mapeador no usa. Se publican la precisión y la exhaustividad **ponderadas por MW**, con intervalo.
