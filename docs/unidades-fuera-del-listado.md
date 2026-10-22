@@ -120,3 +120,35 @@ suman en la serie gallega.
 - UP presentes en varios meses con distinta clasificación.
 - En qué meses tiene P48 cada eólica de fuera del listado.
 - P48 de fuera del listado ubicado en Galicia, en otra comunidad y sin ubicar.
+
+## Resultado de la parte 1
+
+Medido el 22 de octubre de 2026 con los 92 I90 de los tres meses, el listado de unidades de
+programación del 20 de octubre de 2026 y el indicador 10010 descargado el 21 de octubre de
+2026. Los pesos se ajustaron con `scipy.optimize.lsq_linear` (método `bvls`, SciPy 1.16.3),
+que convergió en los tres meses.
+
+| Mes | Candidatas | Eólicas según el 10010 | Residuo `R` | `Q` |
+|---|---|---|---|---|
+| Enero de 2025 | 305 | 67 | 743,1 GWh | 0,00 % |
+| Junio de 2025 | 270 | 60 | 236,9 GWh | 0,00 % |
+| Enero de 2026 | 175 | 39 | 499,9 GWh | 0,00 % |
+
+**Se cumple la condición 1.** El cierre es exacto: lo que queda sin explicar es del orden de
+10⁻¹⁷ del P48 eólico del mes, el error de redondeo de la coma flotante. El hueco del listado
+es, cuarto a cuarto, el P48 de UP eólicas que ya no están en él. Como control, sin ninguna
+eólica `Q` vale el hueco entero: 9,88 %, 7,88 % y 5,91 %.
+
+### Medidas de apoyo
+
+- **Pesos:** ninguna candidata queda entre 0,1 y 0,9. Por debajo de 0,1 quedan 238, 210 y 136
+  UP, con 615,6, 710,2 y 165,5 GWh. Ninguna candidata tiene P48 nulo en todo el mes, así que
+  ninguna quedó fuera del ajuste por ese motivo.
+- **`Tipo Oferta`:** todas las eólicas según el 10010 tienen el 10, salvo una con el 2 en
+  cada mes de 2025.
+- **Híbridas:** 21 de las 38 UP híbridas del listado tienen P48 en alguno de los meses, y
+  todas tienen peso 0 en todos ellos: el 10010 no incluye las híbridas.
+- **Clasificación estable:** ninguna UP cambia de clasificación de un mes a otro.
+- **75 UP eólicas distintas de fuera del listado:** 30 tienen P48 en los tres meses, 25 en
+  los dos de 2025, 11 solo en enero de 2025, 5 en junio de 2025 y enero de 2026, 3 solo en
+  enero de 2026 y 1 en enero de 2025 y enero de 2026.
