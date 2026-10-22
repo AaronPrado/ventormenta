@@ -12,10 +12,11 @@ la arquitectura completa y las licencias de las fuentes están en
 | Catálogo | `ventormenta` | Todo el proyecto |
 | Esquema | `ventormenta.raw` | Ficheros crudos tal como llegan de cada fuente, un Volume por fuente |
 | Volume gestionado | `ventormenta.raw.esios` | Respuestas crudas de e·sios |
+| Volume gestionado | `ventormenta.raw.osm` | Respuestas crudas de Overpass (OpenStreetMap) |
 
 Se añadirán cuando llegue su ingesta o su fase:
 
-- Volumes `open_meteo`, `redata` y `osm` en `ventormenta.raw`.
+- Volumes `open_meteo` y `redata` en `ventormenta.raw`.
 - Un esquema por capa para las tablas (`ventormenta.bronze`, `ventormenta.silver`…),
   creados desde el bundle o el pipeline.
 
