@@ -39,14 +39,34 @@ la decide anotada en la tabla del mapeo.
 
 ### Paso 1 · Nombre y OpenStreetMap
 
-La descripción de la UF se empareja con el nombre de un parque eólico de OpenStreetMap. La UF
-es gallega si el parque está entre los de Galicia según Overpass, y de otra comunidad si está
-en España fuera de ellos. La evidencia es el identificador del elemento de OpenStreetMap, su
-nombre y la medida de parecido.
+La descripción de la UF se compara con los nombres de los parques eólicos de OpenStreetMap en
+España. Un parque es gallego si está entre los de Galicia según Overpass. La clase de la UF
+la decide la comunidad del parque, no qué parque es: dos parques gallegos de nombre parecido
+(fases, ampliaciones) no cambian la clase; uno gallego y otro de fuera, sí.
 
-La normalización de los nombres, la medida de parecido, su umbral y el tratamiento de los
-empates **se fijan cuando se conozca la forma de los nombres en la descarga de
-OpenStreetMap, antes de cruzar ninguno con el listado**, y se añaden a esta sección.
+- **Normalización:** la misma en los dos lados: minúsculas, sin tildes y con los signos
+  convertidos en espacios.
+- **Parecido:** índice de Jaccard de los trigramas de caracteres de los dos nombres
+  normalizados, es decir, los trigramas que comparten sobre todos los que tienen entre los
+  dos. Va de 0 a 1 y solo depende de los dos nombres: una descarga nueva de OpenStreetMap no
+  cambia el parecido de los pares que siguen igual.
+- **Umbral `T`:** se calibra solo con OpenStreetMap, sin el listado. Para cada parque con
+  nombre se toma su mejor parecido con un parque del otro lado: los de Galicia frente a los
+  del resto de España, y al revés. `T` es el **percentil 95** de esos parecidos, el que
+  alcanzan por azar dos parques que seguro que son distintos, justo en la confusión que
+  cambia la clase.
+- **Candidatos:** los parques con un parecido de al menos `T`.
+- **Clase (consenso de comunidad):** gallega si todos los candidatos son de Galicia, de otra
+  comunidad si ninguno lo es y sin ubicar por el paso 1 si se mezclan o si no hay candidatos.
+- **Evidencia:** el mejor candidato (identificador del elemento de OpenStreetMap, nombre y
+  parecido) y el número de candidatos de Galicia y de fuera.
+
+**Se fija tras explorar la descarga, mirando cada lado por separado y antes de cruzar ninguno
+con el listado:** qué palabras de tipo («parque», «eólico», «P.E.»…) quita la normalización,
+qué variantes del nombre entran por cada lado (etiquetas de nombre de OpenStreetMap,
+descripciones corta y larga de la UF; el parecido de dos parques o de una UF y un parque es el
+máximo entre sus variantes) y si los prefijos frecuentes obligan a cambiar de medida. Si
+cambian la normalización o la medida, `T` se recalcula con la misma regla.
 
 ### Paso 2 · Vecindad del P48
 
@@ -88,6 +108,8 @@ desconocidas estén fuera de Galicia, y el P48 de la UP no las separa.
 
 ## Medidas (se publican con el resultado)
 
+- Paso 1: valor de `T`, parques de OpenStreetMap con un homónimo al otro lado, y UF sin
+  ubicar porque sus candidatos se mezclan o porque no tienen ninguno.
 - UF y MW por clase y por evidencia: paso 1, paso 2 o ninguna.
 - UP y MW por clase.
 - **MW de UF gallegas en UP mixtas o desconocidas**, por tamaño de UP. Es la potencia gallega
