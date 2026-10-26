@@ -39,21 +39,46 @@ la decide anotada en la tabla del mapeo.
 
 ### Paso 1 · Nombre y OpenStreetMap
 
-La descripción de la UF se compara con los nombres de los parques eólicos del extracto de
-OpenStreetMap de España que publica Geofabrik. Un parque es gallego si también está en el
-extracto de Galicia de la misma fecha. La clase de la UF
-la decide la comunidad del parque, no qué parque es: dos parques gallegos de nombre parecido
-(fases, ampliaciones) no cambian la clase; uno gallego y otro de fuera, sí.
+La descripción larga de la UF se compara con los nombres de los parques eólicos del extracto
+de OpenStreetMap de España que publica Geofabrik: los elementos con `power=plant` y
+`plant:source=wind`. Un parque es gallego si también está en el extracto de Galicia de la
+misma fecha. La clase de la UF la decide la comunidad del parque, no qué parque es: dos
+parques gallegos de nombre parecido (fases, ampliaciones) no cambian la clase; uno gallego y
+otro de fuera, sí.
 
-- **Normalización:** la misma en los dos lados: minúsculas, sin tildes y con los signos
-  convertidos en espacios.
-- **Parecido:** índice de Jaccard de los trigramas de caracteres de los dos nombres
-  normalizados, es decir, los trigramas que comparten sobre todos los que tienen entre los
-  dos. Va de 0 a 1 y solo depende de los dos nombres: una descarga nueva de OpenStreetMap no
-  cambia el parecido de los pares que siguen igual.
+- **Nombres de cada lado:**
+  - De la UF, solo la **descripción larga**. La corta es casi siempre un código de pocas
+    letras, a menudo con el prefijo pegado («PEGALLE»), y como variante solo añadiría
+    parecidos por azar.
+  - De cada parque, **todas sus etiquetas de nombre**: `name`, `alt_name`, `official_name`,
+    `old_name`, `short_name`, `loc_name`, `reg_name`, `nat_name`, `int_name` y
+    `sorting_name`, con o sin sufijo (`name:gl`, `alt_name:es`…), con los valores partidos
+    por «;», el separador de valores de OpenStreetMap.
+  - Los elementos sin `plant:source` no entran, aunque su nombre lo sugiera.
+- **Forma comparable**, la misma en los dos lados:
+  1. Minúsculas, sin tildes (también «ñ» pasa a «n») y con los signos convertidos en
+     espacios.
+  2. Sin **palabras de tipo**: parque, parc, parke, eolico, eolica, eolic, eolikoa, eol, pe,
+     p y uf. Están en casi todos los nombres de los dos lados («P.E.», «P. E.», «Parc
+     Eòlic», «UF EOLICA»…) y harían parecerse a dos parques cualesquiera.
+  3. Sin **palabras de unión**: de, del, d, la, las, el, los, lo, les, do, da, dos, das, o,
+     os, a, as, y, e. Cambian entre las versiones de un mismo nombre en castellano, gallego
+     o catalán («Sierra de los Lagos», «Serra dos Lagos»).
+  4. Sin **numerales** (palabras solo de dígitos o solo de las letras i, v y x) ni
+     **palabras de fase**: fase, ampliacion, repotenciacion, parte y extension. Distinguen
+     fases de un mismo parque, que no cambian la clase.
+
+  Las erratas no se corrigen («elico»): el nombre sigue siendo alcanzable por sus otras
+  palabras. Un nombre cuya forma comparable queda vacía no tiene candidatos.
+- **Parecido:** índice de Jaccard de los trigramas de caracteres de las dos formas
+  comparables, con un espacio de relleno a cada lado, es decir, los trigramas que comparten
+  sobre todos los que tienen entre los dos. Va de 0 a 1 y solo depende de los dos nombres:
+  una descarga nueva de OpenStreetMap no cambia el parecido de los pares que siguen igual. El
+  parecido de una UF y un parque, o de dos parques, es el máximo entre sus nombres.
 - **Umbral `T`:** se calibra solo con OpenStreetMap, sin el listado. Para cada parque con
-  nombre se toma su mejor parecido con un parque del otro lado: los de Galicia frente a los
-  del resto de España, y al revés. `T` es el **percentil 95** de esos parecidos, el que
+  algún nombre de forma comparable no vacía se toma su mejor parecido con un parque del otro
+  lado: los de Galicia frente a los del resto de España, y al revés. `T` es el **percentil
+  95** de esos parecidos (con interpolación lineal entre los valores ordenados), el que
   alcanzan por azar dos parques que seguro que son distintos, justo en la confusión que
   cambia la clase.
 - **Candidatos:** los parques con un parecido de al menos `T`.
@@ -62,12 +87,15 @@ la decide la comunidad del parque, no qué parque es: dos parques gallegos de no
 - **Evidencia:** el mejor candidato (identificador del elemento de OpenStreetMap, nombre y
   parecido) y el número de candidatos de Galicia y de fuera.
 
-**Se fija tras explorar la descarga, mirando cada lado por separado y antes de cruzar ninguno
-con el listado:** qué palabras de tipo («parque», «eólico», «P.E.»…) quita la normalización,
-qué variantes del nombre entran por cada lado (etiquetas de nombre de OpenStreetMap,
-descripciones corta y larga de la UF; el parecido de dos parques o de una UF y un parque es el
-máximo entre sus variantes) y si los prefijos frecuentes obligan a cambiar de medida. Si
-cambian la normalización o la medida, `T` se recalcula con la misma regla.
+Los nombres, la forma comparable y las listas de palabras se fijaron **explorando cada lado
+por separado** (los extractos del 25 de octubre de 2026 y el listado del 20 de octubre),
+antes de cruzarlos. Con las palabras de tipo fuera, los prefijos frecuentes no obligan a
+cambiar de medida. Si cambian la forma comparable o la medida, `T` se recalcula con la misma
+regla.
+
+Los parques eólicos sin nombre y las UF cuya descripción larga es solo un código («PICAL»,
+«GRANADO») difícilmente se ubican por este paso: si son la única UF de su UP, pasan al
+paso 2; si no, su UP queda desconocida.
 
 ### Paso 2 · Vecindad del P48
 
@@ -109,8 +137,9 @@ desconocidas estén fuera de Galicia, y el P48 de la UP no las separa.
 
 ## Medidas (se publican con el resultado)
 
-- Paso 1: valor de `T`, parques de OpenStreetMap con un homónimo al otro lado, y UF sin
-  ubicar porque sus candidatos se mezclan o porque no tienen ninguno.
+- Paso 1: valor de `T`, parques eólicos de OpenStreetMap sin nombre y con un homónimo al
+  otro lado (misma forma comparable), y UF sin ubicar porque sus candidatos se mezclan o
+  porque no tienen ninguno.
 - UF y MW por clase y por evidencia: paso 1, paso 2 o ninguna.
 - UP y MW por clase.
 - **MW de UF gallegas en UP mixtas o desconocidas**, por tamaño de UP. Es la potencia gallega
