@@ -15,7 +15,8 @@ CREATE VOLUME IF NOT EXISTS ventormenta.raw.esios
 COMMENT 'Respuestas crudas de e·sios. Datos de Red Eléctrica: no se redistribuyen.';
 
 CREATE VOLUME IF NOT EXISTS ventormenta.raw.osm
-COMMENT 'Respuestas crudas de Overpass (OpenStreetMap), ODbL: sus derivados se guardan aparte.';
+COMMENT ON VOLUME ventormenta.raw.osm IS
+'Extractos de OpenStreetMap de Geofabrik, tal como se descargan. ODbL: sus derivados se guardan aparte.';
 
 -- Lectura de las instantáneas para el vigilante de GitHub Actions. Los privilegios van al
 -- grupo, no al service principal: cambiar o rotar la identidad no toca este fichero. El
