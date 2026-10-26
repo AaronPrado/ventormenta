@@ -215,6 +215,30 @@ y de archivos y fichas sueltas), guardadas literales. Las fichas sin fecha (como
 listados de unidades) van directamente en la carpeta del archivo; las de un día, en su
 `date=`. Van aparte de `archives/` para que esa carpeta solo tenga ficheros de datos.
 
+### Extractos de OpenStreetMap (Geofabrik)
+
+```
+/Volumes/ventormenta/raw/osm/geofabrik/<región>/extract_date=<AAAA-MM-DD>/<AAAAMMDDTHHMMSSZ>.osm.pbf
+/Volumes/ventormenta/raw/osm/geofabrik/<región>/extract_date=<AAAA-MM-DD>/<AAAAMMDDTHHMMSSZ>.json
+```
+
+Por ejemplo, el extracto de Galicia del 25 de octubre de 2026, recibido a las 12:20:55 UTC
+del 26 de octubre:
+
+```
+/Volumes/ventormenta/raw/osm/geofabrik/galicia/extract_date=2026-10-25/20261026T122055Z.osm.pbf
+```
+
+- **Una carpeta por fecha del extracto**, como los I90: cada día tiene un solo fichero, y
+  una carpeta con algo dentro no se vuelve a pedir. Las regiones son `spain` y `galicia`,
+  siempre de la misma fecha: un parque es gallego si está en los dos.
+- **El `.osm.pbf` tal como llega**, después de comprobar su tamaño y su cabecera.
+- **Al lado, un JSON con el mismo nombre** (`format_version` 1): región, fecha del extracto,
+  URL, `requested_at` y `received_at`, código, cabeceras `Date` y `Last-Modified`, tamaño,
+  SHA-256, la versión de `osmium` y el instante de los datos según la cabecera del PBF
+  (`osmosis_replication_timestamp`), que es el vintage de la foto de OpenStreetMap.
+- **El JSON se escribe el último**: un `.osm.pbf` sin su JSON es una descarga a medias.
+
 ## Cómo se crean
 
 Ejecutar [`infra/unity_catalog.sql`](../infra/unity_catalog.sql) en el editor SQL del
