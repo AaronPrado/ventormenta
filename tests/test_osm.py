@@ -2,7 +2,7 @@
 
 import pytest
 
-from ventormenta.osm import Plant, name_tags, plant_from_tags
+from ventormenta.osm import Plant, name_tags, name_variants, plant_from_tags
 
 TAGS = {
     "power": "plant",
@@ -75,3 +75,13 @@ def test_unknown_element_type_is_rejected() -> None:
 def test_members_outside_a_relation_are_rejected() -> None:
     with pytest.raises(ValueError, match="sin ser una relación"):
         plant_from_tags("w", 10, {"power": "plant"}, [("n", 1)])
+
+
+def test_name_variants_split_values_by_semicolon_in_tag_order() -> None:
+    names = {"name": "Parque Eólico Uno", "alt_name": "PE Uno; Uno I;", "name:gl": " "}
+
+    assert name_variants(names) == ["Parque Eólico Uno", "PE Uno", "Uno I"]
+
+
+def test_name_variants_of_unnamed_park_is_empty() -> None:
+    assert name_variants({}) == []

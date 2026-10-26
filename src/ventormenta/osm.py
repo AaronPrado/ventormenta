@@ -77,3 +77,12 @@ def plant_from_tags(
         keys=tuple(sorted(tags)),
         members=members,
     )
+
+
+def name_variants(names: Mapping[str, str]) -> list[str]:
+    """Los nombres de un parque: cada valor de sus etiquetas de nombre, partido por «;».
+
+    El «;» separa varios valores en una misma etiqueta de OpenStreetMap. Se quitan los
+    espacios de los extremos y los valores vacíos; el orden es el de las etiquetas.
+    """
+    return [part.strip() for value in names.values() for part in value.split(";") if part.strip()]
