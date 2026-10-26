@@ -39,8 +39,9 @@ la decide anotada en la tabla del mapeo.
 
 ### Paso 1 · Nombre y OpenStreetMap
 
-La descripción de la UF se compara con los nombres de los parques eólicos de OpenStreetMap en
-España. Un parque es gallego si está entre los de Galicia según Overpass. La clase de la UF
+La descripción de la UF se compara con los nombres de los parques eólicos del extracto de
+OpenStreetMap de España que publica Geofabrik. Un parque es gallego si también está en el
+extracto de Galicia de la misma fecha. La clase de la UF
 la decide la comunidad del parque, no qué parque es: dos parques gallegos de nombre parecido
 (fases, ampliaciones) no cambian la clase; uno gallego y otro de fuera, sí.
 
@@ -141,5 +142,5 @@ con Red Eléctrica. Después solo cambia con evidencia externa anotada y como ve
 - **Si las UP mixtas suman de algún modo**, por ejemplo prorrateadas por potencia. Sería un
   cambio de diseño, que se plantearía con la medida de MW gallegos en UP mixtas.
 - La ubicación de las UP de fuera del listado, que sigue su propia regla.
-- Una UF en la frontera de Galicia queda con la ubicación que le da Overpass: la regla no
-  reparte un parque entre dos comunidades.
+- Una UF en la frontera de Galicia queda con la ubicación que le da el extracto de Galicia:
+  la regla no reparte un parque entre dos comunidades.

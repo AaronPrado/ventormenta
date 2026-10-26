@@ -47,6 +47,8 @@ VenTormenta:
 | e·sios, sistema peninsular | Producción eólica y previsión de Red Eléctrica |
 | Open-Meteo, ejecuciones archivadas de ECMWF IFS | Funcionan sobre Galicia |
 
+En el spike 2 (octubre de 2026), Overpass dejó de atender las consultas desde Databricks: el servidor principal respondía que estaba lleno mientras aceptaba las de un navegador, y su espejo público no respondía. OpenStreetMap pasa a descargarse de los extractos fechados de Geofabrik (`download.geofabrik.de`), con la salida desde Databricks comprobada.
+
 No se comprobó la salida desde Databricks hacia otros destinos (GitHub, almacenamiento externo). Por eso todos los flujos hacia fuera los inicia GitHub Actions (sección 8).
 
 ### 2.2 Alternativas evaluadas
@@ -142,7 +144,7 @@ Cuantificación pública de recortes, generación "sin recortes", series o ranki
 | Red Eléctrica · REData | Producción eólica mensual de Galicia ✅ | **Solo contraste mensual de aviso**, guardado con su fecha de descarga |
 | Open-Meteo · Single Runs API | ECMWF IFS HRES (9 km) desde el 14 de marzo de 2024 | Features |
 | Open-Meteo · Historical Weather API | IFS de 9 km archivado desde 2017 | Referencia de "verdad meteorológica" en el catálogo de fugas |
-| OpenStreetMap | Ubicación de aerogeneradores y parques | Agrupación geoespacial y apoyo al mapeo |
+| OpenStreetMap · extractos fechados de Geofabrik (España y Galicia) | Ubicación de aerogeneradores y parques | Agrupación geoespacial y apoyo al mapeo |
 
 **Cuota de Open-Meteo**: el uso gratuito exige menos de 10.000 llamadas diarias, 5.000 por hora y 600 por minuto, y cada ubicación cuenta como una llamada (más si se piden muchos días o variables). El diseño geoespacial se ajusta a un presupuesto documentado (sección 8.3).
 
