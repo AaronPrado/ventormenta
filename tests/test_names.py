@@ -210,14 +210,20 @@ REST = [
 ]
 
 
-def test_null_threshold_is_the_linear_95th_percentile_of_both_directions() -> None:
-    values = best_matches(GALICIA, REST) + best_matches(REST, GALICIA)
+def test_null_threshold_is_the_linear_95th_percentile_from_galicia() -> None:
+    values = best_matches(GALICIA, REST)
     ordered = sorted(values)
 
-    assert len(values) == 25  # el parque sin nombre útil no entra
+    assert len(values) == 11  # el parque sin nombre útil no entra
     # El percentil cae entre dos valores distintos: el test comprueba la interpolación.
-    assert ordered[22] < ordered[23]
+    assert ordered[9] < ordered[10]
     assert null_threshold(GALICIA, REST) == pytest.approx(linear_percentile(values, 95))
+
+
+def test_null_threshold_ignores_the_direction_from_the_rest() -> None:
+    both = best_matches(GALICIA, REST) + best_matches(REST, GALICIA)
+
+    assert null_threshold(GALICIA, REST) != pytest.approx(linear_percentile(both, 95))
 
 
 @pytest.mark.parametrize(

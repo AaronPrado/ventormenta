@@ -103,15 +103,16 @@ def best_matches(side: Sequence[Profile], other: Sequence[Profile]) -> list[floa
 
 
 def null_threshold(galicia: Sequence[Profile], rest: Sequence[Profile]) -> float:
-    """Umbral ``T``: percentil 95 del mejor parecido de cada parque con el otro lado.
+    """Umbral ``T``: percentil 95 del mejor parecido de cada parque gallego con uno de fuera.
 
-    Junta los de Galicia frente al resto de España y los del resto frente a Galicia: son
-    parques que seguro que son distintos, así que su mejor parecido es el que se alcanza por
-    azar. Interpolación lineal entre los valores ordenados (``method="inclusive"``, la misma
-    que el percentil por defecto de NumPy). Lanza ``ValueError`` si algún lado no tiene
-    parques con nombre.
+    Son parques que seguro que son distintos, así que su mejor parecido es el que se alcanza
+    por azar. Solo cuenta la dirección de Galicia frente al resto: cada parque gallego busca
+    entre muchos más parques que uno de fuera entre los gallegos, y juntar las dos bajaría
+    ``T`` justo en el lado que suma. Interpolación lineal entre los valores ordenados
+    (``method="inclusive"``, la misma que el percentil por defecto de NumPy). Lanza
+    ``ValueError`` si algún lado no tiene parques con nombre.
     """
     if not any(galicia) or not any(rest):
         raise ValueError("hacen falta parques con nombre en los dos lados")
-    values = best_matches(galicia, rest) + best_matches(rest, galicia)
+    values = best_matches(galicia, rest)
     return quantiles(values, n=100, method="inclusive")[T_PERCENTILE - 1]

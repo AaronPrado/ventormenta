@@ -75,12 +75,14 @@ otro de fuera, sí.
   sobre todos los que tienen entre los dos. Va de 0 a 1 y solo depende de los dos nombres:
   una descarga nueva de OpenStreetMap no cambia el parecido de los pares que siguen igual. El
   parecido de una UF y un parque, o de dos parques, es el máximo entre sus nombres.
-- **Umbral `T`:** se calibra solo con OpenStreetMap, sin el listado. Para cada parque con
-  algún nombre de forma comparable no vacía se toma su mejor parecido con un parque del otro
-  lado: los de Galicia frente a los del resto de España, y al revés. `T` es el **percentil
-  95** de esos parecidos (con interpolación lineal entre los valores ordenados), el que
-  alcanzan por azar dos parques que seguro que son distintos, justo en la confusión que
-  cambia la clase.
+- **Umbral `T`:** se calibra solo con OpenStreetMap, sin el listado. Para cada **parque
+  gallego** con algún nombre de forma comparable no vacía se toma su mejor parecido con un
+  parque del resto de España. `T` es el **percentil 95** de esos parecidos (con
+  interpolación lineal entre los valores ordenados), el que alcanza por azar un parque
+  gallego con otro que seguro que es distinto, justo en la confusión que cambia la clase de
+  una UF gallega. Solo cuenta esa dirección: cada parque gallego busca su mejor parecido
+  entre muchos más parques que uno de fuera entre los gallegos, así que, juntando las dos,
+  los de fuera bajarían `T` y dejarían pasar por azar muchos más cruces en el lado que suma.
 - **Candidatos:** los parques con un parecido de al menos `T`.
 - **Clase (consenso de comunidad):** gallega si todos los candidatos son de Galicia, de otra
   comunidad si ninguno lo es y sin ubicar por el paso 1 si se mezclan o si no hay candidatos.
@@ -92,6 +94,18 @@ por separado** (los extractos del 25 de octubre de 2026 y el listado del 20 de o
 antes de cruzarlos. Con las palabras de tipo fuera, los prefijos frecuentes no obligan a
 cambiar de medida. Si cambian la forma comparable o la medida, `T` se recalcula con la misma
 regla.
+
+La primera versión de la regla calibraba `T` con las dos direcciones juntas. Se cambió a la
+de Galicia frente al resto **antes del cruce**, con datos solo de OpenStreetMap: con la
+primera, 33 de los 168 parques gallegos con nombre tenían algún parque de fuera por encima de
+`T`, casi siempre parques de una sola palabra genérica («El Monte», «La Peña»); con la
+segunda, 14. Entre los nombres distintos de un mismo parque en OpenStreetMap, que son
+coincidencias verdaderas, solo se dejan de reconocer dos que el listado no usa: una palabra de
+tipo en alemán y una errata.
+
+**Limitación de la medida:** un nombre corto con una o dos letras cambiadas («Acebo» y
+«Acevo», «Soán» y «Xoán») no llega a `T` con ningún umbral razonable: en un nombre de cinco
+letras, una letra cambiada rompe la mitad de sus trigramas.
 
 Los parques eólicos sin nombre y las UF cuya descripción larga es solo un código («PICAL»,
 «GRANADO») difícilmente se ubican por este paso: si son la única UF de su UP, pasan al
