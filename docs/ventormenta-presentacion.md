@@ -21,7 +21,7 @@ Licencia del código: GPL-3.0 (sección 14)
 
 ## 1. Resumen ejecutivo
 
-Según Red Eléctrica, Galicia es la tercera comunidad en producción eólica de España, pero su producción solo se publica por meses. ✅ Lo que sí es público, a los 90 días y sin agregar, es el programa de cada unidad de programación del mercado eléctrico, cuarto de hora a cuarto de hora. ✅
+Según Red Eléctrica, Galicia es la tercera comunidad en producción eólica de España. REData publica su producción por meses ✅, y e·sios, la producción medida de cada provincia hora a hora ✅, desde el mes siguiente según su descripción (spike 2). Lo que no se publica es el programa eólico de Galicia; sí es público, a los 90 días y sin agregar, el de cada unidad de programación del mercado eléctrico, cuarto de hora a cuarto de hora. ✅
 
 VenTormenta:
 
@@ -49,6 +49,8 @@ VenTormenta:
 
 En el spike 2 (octubre de 2026), Overpass dejó de atender las consultas desde Databricks: el servidor principal respondía que estaba lleno mientras aceptaba las de un navegador, y su espejo público no respondía. OpenStreetMap pasa a descargarse de los extractos fechados de Geofabrik (`download.geofabrik.de`), con la salida desde Databricks comprobada.
 
+El spike de fuentes solo encontró en e·sios la potencia instalada de Galicia. En el spike 2 apareció también la producción eólica medida por provincia (indicador 10037), horaria y con las cuatro provincias gallegas ✅, publicada desde el mes siguiente según su descripción. Su papel en la pista gallega está en la sección 2.2.
+
 No se comprobó la salida desde Databricks hacia otros destinos (GitHub, almacenamiento externo). Por eso todos los flujos hacia fuera los inicia GitHub Actions (sección 8).
 
 ### 2.2 Alternativas evaluadas
@@ -56,7 +58,9 @@ No se comprobó la salida desde Databricks hacia otros destinos (GitHub, almacen
 | Alternativa | Decisión |
 |---|---|
 | Núcleo peninsular + capítulo gallego mensual | Plan de respaldo |
-| **Lo anterior + serie gallega reconstruida desde los programas por unidad** | **Elegida, condicionada al spike 2** |
+| Lo anterior + serie gallega reconstruida desde los programas por unidad | Elegida, condicionada al spike 2. Descartada en él: con la versión 1 del mapeo, la cobertura en potencia queda acotada por debajo del umbral (`docs/mapeo-listado.md`) |
+| Serie reconstruida sumando las unidades mixtas o desconocidas, prorrateadas por potencia | Descartada en el spike 2: su error horario no se puede medir con el P48 |
+| **Núcleo peninsular + pista gallega con la producción medida por provincia (indicador 10037) como etiqueta** | **Elegida tras el spike 2, condicionada a su criterio (`docs/pista-gallega.md`)** |
 | Previsión de precios | Descartada: sin foco gallego |
 | Estimación diaria por reparto de la peninsular | Descartada: su error no se puede medir |
 | Otra variable gallega / pedir datos por parque a la Xunta | Descartadas por criterio del autor |
@@ -203,6 +207,8 @@ Cuantificación pública de recortes, generación "sin recortes", series o ranki
 8. Número efectivo de días independientes por régimen.
 
 **Criterio para continuar**: cobertura en potencia por encima del umbral y los tres meses dentro de la tolerancia derivada, sin escalar con REData. Si no, plan de respaldo.
+
+**Resultado de la comprobación 4**: con la versión 1 del mapeo, congelada con hash y tag, la cobertura en potencia queda acotada por debajo del umbral, porque las unidades agregadoras reúnen parques gallegos y de otras comunidades y su P48 no los separa (`docs/mapeo-listado.md`). La pista gallega pasa a tener como etiqueta la producción medida por provincia (indicador 10037), con su propio criterio para continuar: etiqueta completa y coherente con REData en los tres meses de desarrollo (`docs/pista-gallega.md`). Si no, plan de respaldo.
 
 ---
 
