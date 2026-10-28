@@ -193,7 +193,49 @@ promotores, nunca OpenStreetMap ni el P48.
 
 La tabla del mapeo (una fila por UF, con su clase, su evidencia y la clase de su UP) se
 congela con su SHA-256 y un tag **antes** de calcular la cobertura en potencia o el contraste
-con Red Eléctrica. Después solo cambia con evidencia externa anotada y como versión nueva.
+con Red Eléctrica, y antes de mirar ninguna cifra gallega. Después solo cambia con evidencia
+externa anotada y como versión nueva.
+
+### Versión 1
+
+- **Contenido:** el paso 1 de las 1.166 UF, con el listado del 20 de octubre de 2026, los
+  extractos del 25 de octubre de 2026 y `T` = 0,4444. El paso 2 y la parte 2 de las UP de fuera
+  del listado no se aplican: las UF que el paso 1 deja sin ubicar quedan desconocidas, con
+  evidencia «ninguno», también las que son la única UF de su UP.
+- **Por qué así:** el paso 1 de las agregadoras ya basta para que la pista gallega no cumpla el
+  criterio para continuar (resultado «Agregadoras · paso 1»). La versión 1 se congela antes de
+  mirar ninguna cifra gallega, porque es la única versión que puede ser ciega. Las reglas del
+  paso 2 y de la parte 2 se fijaron antes del cruce y no cambian: si se aplican más adelante,
+  serán otra versión.
+
+### Forma canónica y hash
+
+El SHA-256 se calcula sobre un texto que se puede reconstruir desde la tabla
+`ventormenta.mapeo.uf`, sin el código del proyecto:
+
+1. **Filas:** las de la versión, leídas de la tabla y ordenadas por `uf_code`, comparando los
+   caracteres por su código Unicode.
+2. **Columnas:** todas menos `computed_at`, que cambia en cada ejecución sin cambiar el mapeo.
+   En este orden: `mapping_version`, `uf_code`, `up_code`, `uf_description`, `uf_mw`,
+   `listing_capture_date`, `osm_extract_date`, `uf_class`, `uf_step`, `best_osm_type`,
+   `best_osm_id`, `best_osm_name`, `best_similarity`, `candidates_galicia`, `candidates_rest` y
+   `up_class`.
+3. **Texto:** en UTF-8, una primera línea con los nombres de las columnas y después una línea
+   por fila. Cada línea es un array JSON compacto, con los separadores sin espacios:
+   - las cadenas, como en JSON, pero sin escapar los caracteres no ASCII;
+   - las fechas, como cadenas `AAAA-MM-DD`;
+   - los nulos, `null`, y los enteros, sin decimales;
+   - los valores `DOUBLE`, con la representación decimal más corta que devuelve el mismo valor
+     (la de `repr` en Python); no se admiten NaN ni infinitos.
+
+   Cada línea termina en un salto de línea (`\n`), también la última.
+4. **Hash:** el SHA-256 de ese texto, en hexadecimal y en minúsculas.
+
+Las filas van como arrays con una cabecera, y no como objetos, para que el orden y el conjunto
+de las columnas queden atados al hash. JSON evita las ambigüedades de comillas y nulos del CSV.
+No sirven ni el hash de los ficheros de la tabla, que cambian al reorganizarla sin que cambien
+los datos, ni su número de versión de Delta, que no dice nada del contenido y deja de poder
+leerse cuando se limpian los ficheros antiguos.
 
 ## Qué no decide esta regla
 
