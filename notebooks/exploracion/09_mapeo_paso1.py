@@ -26,6 +26,7 @@ from ventormenta.mapping import (  # noqa: E402
     Park,
     UfClass,
     candidates,
+    mapping_digest,
     park_from_plant,
     step1_class,
     up_class,
@@ -42,7 +43,7 @@ EXTRACT_DATE = date(2026, 10, 25)
 TABLE = "ventormenta.mapeo.uf"
 MAPPING_VERSION = "v1"
 # Una versión congelada no se reescribe: se añade aquí al poner su tag.
-FROZEN_VERSIONS: frozenset[str] = frozenset()
+FROZEN_VERSIONS = frozenset({"v1"})
 # Lo publicado en docs/mapeo-listado.md: si los datos o el código ya no lo reproducen, se para.
 PUBLISHED_T = 0.4444
 PUBLISHED_PARKS = {"galicia": 177, "resto": 887}
@@ -252,3 +253,17 @@ stuck = agg[agg["uf_class"].eq("gallega") & agg["up_class"].isin(["mixta", "desc
 print("== MW de UF gallegas en agregadoras mixtas o desconocidas")
 print(mw_table(stuck, ["up_code", "up_class"]))
 print(f"total: {stuck['uf_mw'].sum():.1f} MW en {len(stuck)} UF")
+
+# COMMAND ----------
+
+frozen = [
+    row.asDict()
+    for row in spark.table(TABLE)  # noqa: F821
+    .where(F.col("mapping_version") == MAPPING_VERSION)
+    .collect()
+]
+if len(frozen) != PUBLISHED_LISTING["uf"]:
+    raise RuntimeError(f"{len(frozen)} filas en la versión, {PUBLISHED_LISTING['uf']} esperadas")
+digest = mapping_digest(frozen)
+print(f"{TABLE}, versión {MAPPING_VERSION}: {len(frozen)} filas")
+print(f"SHA-256: {digest}")

@@ -334,3 +334,16 @@ umbral, y eso lo mediría la muestra de referencia.
 Con el diseño actual, la pista gallega no cumple el criterio para continuar. Queda por decidir
 entre el plan de respaldo y un cambio de diseño (por ejemplo, sumar las UP mixtas o desconocidas
 prorrateadas por potencia), como prevé «Qué no decide esta regla».
+
+### Congelación de la versión 1
+
+Calculada el 28 de octubre de 2026 desde la tabla `ventormenta.mapeo.uf`, antes de mirar ninguna
+cifra gallega, con la forma canónica de «Congelación» (`mapping_digest` de
+`ventormenta.mapping`, desde el notebook `notebooks/exploracion/09_mapeo_paso1.py`).
+
+- **Filas:** 1.166, las de `mapping_version = 'v1'`.
+- **SHA-256:** `76ba585598d583e18209292bd6735704ed2711b326f967809d3969b7b2e46c3d`.
+- **Tag:** `mapeo-v1`, sobre el commit que publica este hash.
+
+El notebook no vuelve a escribir una versión congelada: si se ejecuta con `v1`, se para antes de
+tocar la tabla.
