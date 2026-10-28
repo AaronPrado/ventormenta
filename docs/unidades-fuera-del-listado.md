@@ -107,7 +107,8 @@ suman en la serie gallega.
 - **La tolerancia se recalcula con la misma regla** si las UP de fuera del listado entran en
   el mapeo, porque mide el método tal como se aplica.
 - **La vecindad ubica, no identifica:** no dice qué UP actual sucede a la que falta ni con qué
-  potencia. Cómo cuentan estas UP en la cobertura en potencia se decide al definir esa capa.
+  potencia. En la cobertura en potencia cuentan con una cota inferior de la suya
+  ([cobertura-potencia.md](cobertura-potencia.md)).
 - Una UP de fuera del listado que reunía parques de varias comunidades queda en la que domina
   su P48: la regla no detecta las mixtas.
 

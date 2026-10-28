@@ -181,7 +181,8 @@ con Red Eléctrica. Después solo cambia con evidencia externa anotada y como ve
 
 ## Qué no decide esta regla
 
-- **El umbral de la cobertura en potencia**, que se fija antes de congelar el mapeo.
+- **El umbral de la cobertura en potencia**, fijado antes de mapear en
+  [cobertura-potencia.md](cobertura-potencia.md).
 - **Si las UP mixtas suman de algún modo**, por ejemplo prorrateadas por potencia. Sería un
   cambio de diseño, que se plantearía con la medida de MW gallegos en UP mixtas.
 - La ubicación de las UP de fuera del listado, que sigue su propia regla.
