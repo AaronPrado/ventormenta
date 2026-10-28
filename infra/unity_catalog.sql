@@ -69,4 +69,4 @@ ALTER TABLE ventormenta.mapeo.uf ADD CONSTRAINT up_class_valid
   CHECK (up_class IN ('gallega', 'otra', 'mixta', 'desconocida'));
 ALTER TABLE ventormenta.mapeo.uf DROP CONSTRAINT IF EXISTS similarity_range;
 ALTER TABLE ventormenta.mapeo.uf ADD CONSTRAINT similarity_range
-  CHECK (best_similarity BETWEEN 0 AND 1);
+  CHECK (best_similarity IS NULL OR best_similarity BETWEEN 0 AND 1);
