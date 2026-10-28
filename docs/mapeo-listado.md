@@ -92,8 +92,12 @@ otro de fuera, sí.
 Los nombres, la forma comparable y las listas de palabras se fijaron **explorando cada lado
 por separado** (los extractos del 25 de octubre de 2026 y el listado del 20 de octubre),
 antes de cruzarlos. Con las palabras de tipo fuera, los prefijos frecuentes no obligan a
-cambiar de medida. Si cambian la forma comparable o la medida, `T` se recalcula con la misma
-regla.
+cambiar de medida.
+
+**El cruce no cambia la regla.** Ajustarla después de ver qué UF quedan sin ubicar o qué
+candidatos salen la adaptaría a este listado, y la precisión publicada dejaría de ser la de
+una regla fijada a ciegas. Un fallo que se vea en el cruce se anota como limitación, y su
+efecto lo mide la muestra de referencia, ponderado por la potencia.
 
 La primera versión de la regla calibraba `T` con las dos direcciones juntas. Se cambió a la
 de Galicia frente al resto **antes del cruce**, con datos solo de OpenStreetMap: con la
