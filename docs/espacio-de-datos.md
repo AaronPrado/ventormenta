@@ -13,6 +13,8 @@ la arquitectura completa y las licencias de las fuentes están en
 | Esquema | `ventormenta.raw` | Ficheros crudos tal como llegan de cada fuente, un Volume por fuente |
 | Volume gestionado | `ventormenta.raw.esios` | Respuestas crudas de e·sios |
 | Volume gestionado | `ventormenta.raw.osm` | Extractos de OpenStreetMap de Geofabrik, tal como se descargan |
+| Esquema | `ventormenta.mapeo` | Mapeo de las unidades eólicas a Galicia |
+| Tabla Delta gestionada | `ventormenta.mapeo.uf` | Una fila por UF eólica y versión del mapeo, con su clase, su evidencia y la clase de su UP ([regla](mapeo-listado.md)) |
 
 Se añadirán cuando llegue su ingesta o su fase:
 
@@ -44,6 +46,12 @@ Se añadirán cuando llegue su ingesta o su fase:
 - **Un Volume por fuente.** Cada fuente tiene su licencia y sus condiciones: los crudos de Red Eléctrica no se redistribuyen, Open-Meteo es CC BY 4.0 y
   OpenStreetMap es ODbL, con los derivados aparte. Separarlas por Volume mantiene esa
   frontera y permite dar a cada credencial acceso solo a lo que necesita.
+- **El mapeo, en el script y por versiones.** La tabla del mapeo tampoco depende del
+  bundle: una versión congelada debe sobrevivir a cualquier despliegue. Su clave es
+  `(mapping_version, uf_code)`: las filas de una versión se reescriben enteras mientras se
+  trabaja en ella, no se tocan una vez congelada, y una versión nueva son filas nuevas. Los
+  valores de las clases los comprueba Delta con restricciones `CHECK`; la clave primaria de
+  Unity Catalog es informativa, así que la unicidad se comprueba antes de escribir.
 - **Nombres en inglés**, como el código y las columnas bitemporales (`valid_time`,
   `available_at`).
 
