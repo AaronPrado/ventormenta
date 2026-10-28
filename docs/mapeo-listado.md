@@ -250,3 +250,45 @@ listado. No cambia la regla.
 - Sin ubicar quedan 6 referencias de 5 parques, sin efecto en la tabla. En Cabeço Alto, 2
   nodos que no están ni en el extracto de España. En 4 parques del resto, una relación dentro
   de la relación del parque, que esta medida no resuelve; sus demás puntos están todos fuera.
+
+### Agregadoras · paso 1
+
+Las 24 UP de 6 o más UF (16.667,3 MW), con el listado del 20 de octubre de 2026, los extractos
+del 25 de octubre de 2026 y `T` = 0,4444, calculado el 28 de octubre de 2026 (versión de trabajo
+`v1` de la tabla del mapeo). El paso 2 no se aplica a estas UP. Las cifras salen solo del
+listado y de OpenStreetMap, sin ninguna cifra gallega. No se publican por UP: el código de una
+UP identifica a su titular.
+
+| UF de las agregadoras | UF | MW |
+|---|---|---|
+| Gallegas | 75 | 2.027,3 |
+| De otra comunidad | 381 | 11.111,8 |
+| Desconocidas | 154 | 3.528,2 |
+| · sin candidatos | 142 | 3.178,6 |
+| · con candidatos de los dos lados | 12 | 349,6 |
+
+| Agregadoras | UP | MW |
+|---|---|---|
+| Gallegas | 0 | 0,0 |
+| De otra comunidad | 1 | 280,4 |
+| Mixtas | 1 | 275,5 |
+| Desconocidas | 22 | 16.111,4 |
+
+- **Ninguna agregadora suma en la serie gallega.** Casi todas quedan desconocidas por alguna
+  UF sin candidatos: en una UP de 6 o más UF, basta una.
+- **MW de UF gallegas en UP mixtas o desconocidas: 2.027,3**, en 75 UF de 16 agregadoras (15
+  desconocidas y la mixta). Es una cota inferior de la potencia gallega que el P48 no deja
+  sumar: entre las UF desconocidas puede haber más.
+
+**Consecuencia para la cobertura en potencia.** La potencia gallega del indicador 1485 no puede
+superar la eólica de toda la península, y el listado entero suma 32.072,4 MW. Por tanto, con
+esta regla de clase de las UP, la cobertura no llega en ningún día a
+`1 − 2.027,3 / 32.072,4 ≈ 93,7 %`, por debajo del umbral del 98,10 %
+([cobertura-potencia.md](cobertura-potencia.md)). El resto del mapeo (las demás UP, el paso 2 y
+las UP de fuera del listado) no cambia esos 2.027,3 MW. Solo los rebajaría que buena parte de
+esas 75 UF fueran falsos positivos, más del 70 % de su potencia para alcanzar siquiera el
+umbral, y eso lo mediría la muestra de referencia.
+
+Con el diseño actual, la pista gallega no cumple el criterio para continuar. Queda por decidir
+entre el plan de respaldo y un cambio de diseño (por ejemplo, sumar las UP mixtas o desconocidas
+prorrateadas por potencia), como prevé «Qué no decide esta regla».
