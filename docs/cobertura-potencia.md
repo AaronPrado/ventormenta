@@ -90,6 +90,11 @@ umbral = 100 % − ( tolerancia − máx |d con el 10010| )
 - **En el pipeline:** el mismo umbral es la expectation diaria de la capa de cobertura; un día
   por debajo va a cuarentena.
 
+Con la versión 1 del mapeo, la cobertura queda acotada por debajo del umbral
+([mapeo-listado.md](mapeo-listado.md)) y la pista gallega pasa a la producción medida
+([pista-gallega.md](pista-gallega.md)). La cobertura ya no decide si se continúa ni entra en el
+pipeline: se mide una vez, como resultado de la versión 1.
+
 ## Medidas de apoyo (no entran en la regla)
 
 Se publican junto al resultado para interpretarlo:

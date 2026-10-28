@@ -101,9 +101,11 @@ suman en la serie gallega.
 
 ## Qué no deciden estas condiciones
 
-- Son **necesarias, no suficientes**. La pista gallega sigue dependiendo del criterio para
-  continuar del [diseño](ventormenta-presentacion.md): cobertura en potencia por encima del
-  umbral y los tres meses dentro de la tolerancia.
+- Son **necesarias, no suficientes**. La pista gallega dependía del criterio para continuar
+  del [diseño](ventormenta-presentacion.md): cobertura en potencia por encima del umbral y los
+  tres meses dentro de la tolerancia. Con la versión 1 del mapeo, la cobertura queda acotada por
+  debajo del umbral, así que la parte 2 no se aplica y la pista gallega pasa a la producción
+  medida ([pista-gallega.md](pista-gallega.md)).
 - **La tolerancia se recalcula con la misma regla** si las UP de fuera del listado entran en
   el mapeo, porque mide el método tal como se aplica.
 - **La vecindad ubica, no identifica:** no dice qué UP actual sucede a la que falta ni con qué

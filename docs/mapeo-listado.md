@@ -333,7 +333,9 @@ umbral, y eso lo mediría la muestra de referencia.
 
 Con el diseño actual, la pista gallega no cumple el criterio para continuar. Queda por decidir
 entre el plan de respaldo y un cambio de diseño (por ejemplo, sumar las UP mixtas o desconocidas
-prorrateadas por potencia), como prevé «Qué no decide esta regla».
+prorrateadas por potencia), como prevé «Qué no decide esta regla». Se decidió después de
+congelar la versión 1, sin mirar ninguna cifra gallega: la pista gallega pasa a la producción
+medida por provincia como etiqueta ([pista-gallega.md](pista-gallega.md)).
 
 ### Congelación de la versión 1
 

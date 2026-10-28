@@ -153,9 +153,9 @@ referencia del P48 eólico completo.
 
 ### Implicaciones
 
-- **Existe una producción eólica medida horaria por provincia**, también para Galicia. Qué
-  papel tiene en la validación de la serie gallega se decide después de congelar el mapeo,
-  para que no influya en él.
+- **Existe una producción eólica medida horaria por provincia**, también para Galicia. Su
+  papel se decidió después de congelar el mapeo, para que no influyera en él: es la etiqueta de
+  la pista gallega si cumple su criterio ([pista-gallega.md](pista-gallega.md)).
 - **El P48 eólico agregado (10010) permite medir cuánto P48 falta en el listado de
   unidades**, sin depender de REData (resultado en [tolerancia-mensual.md](tolerancia-mensual.md)).
 
