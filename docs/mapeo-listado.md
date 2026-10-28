@@ -187,3 +187,49 @@ con Red Eléctrica. Después solo cambia con evidencia externa anotada y como ve
 - La ubicación de las UP de fuera del listado, que sigue su propia regla.
 - Una UF en la frontera de Galicia queda con la ubicación que le da el extracto de Galicia:
   la regla no reparte un parque entre dos comunidades.
+
+## Resultados
+
+### Paso 1 · OpenStreetMap
+
+Con los extractos de Geofabrik del 25 de octubre de 2026, solo con OpenStreetMap y antes de
+cruzarlo con el listado.
+
+- Parques eólicos: 177 en el extracto de Galicia y 887 en el resto de España. El extracto de
+  España (1.064) contiene todos los de Galicia.
+- Sin nombre útil, con la forma comparable vacía en todos sus nombres: 9 en Galicia y 48 en
+  el resto.
+- **`T` = 0,4444.**
+- Homónimos, con la misma forma comparable a los dos lados: ninguno.
+- Parques gallegos con nombre con algún parque del resto en `T` o más: 14 de 168.
+
+### Frontera de Galicia
+
+La pertenencia a Galicia se decide con el extracto de Galicia, que Geofabrik recorta con un
+polígono algo más ancho que la comunidad. Esta medida dice cuánto se aparta ese recorte del
+límite de Galicia en OpenStreetMap (relación 349036, `boundary=administrative`,
+`admin_level=4`), contando solo elementos de OpenStreetMap, sin potencias ni parecidos con el
+listado. No cambia la regla.
+
+- **Puntos de un parque:** sus nodos miembro y los nodos de sus vías miembro, o los de su
+  propia vía si el parque es una vía. Un punto sobre la línea del límite cuenta como dentro.
+- **Clase:** dentro si lo están todos sus puntos, fuera si no lo está ninguno y cruza si unos
+  sí y otros no.
+- **Límite:** ensamblado desde el extracto de Galicia, es válido y tiene 594 polígonos, tierra
+  firme e islas. Sigue la costa: no incluye el mar territorial.
+
+| Parques eólicos | Dentro | Cruza | Fuera |
+|---|---|---|---|
+| Del extracto de Galicia (177) | 173 | 1 | 3 |
+| Del resto de España (887) | 0 | 0 | 887 |
+
+- Ningún parque de fuera del extracto tiene un punto dentro del límite: el extracto no deja
+  fuera ningún parque gallego.
+- Cabeço Alto, Mairos I y Mairos II están enteros fuera del límite, en el margen del recorte.
+  Con la regla cuentan como gallegos. Se mantiene así: solo cambiarían la clase de una UF que
+  se pareciera a uno de ellos por azar, y en la calibración de `T` pesan 3 de 168 parques.
+- El Acebo cruza el límite (5 de sus 29 puntos están dentro) y es gallego por estar en el
+  extracto, como cualquier parque de la frontera.
+- Sin ubicar quedan 6 referencias de 5 parques, sin efecto en la tabla. En Cabeço Alto, 2
+  nodos que no están ni en el extracto de España. En 4 parques del resto, una relación dentro
+  de la relación del parque, que esta medida no resuelve; sus demás puntos están todos fuera.
