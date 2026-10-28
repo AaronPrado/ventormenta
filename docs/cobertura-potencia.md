@@ -46,7 +46,16 @@ cobertura que ese resto no decidiría nada, porque el contraste mensual lo recha
   operativa cuenta con todas sus UF. La ventana de 7 días evita que un día de calma, con el
   programa a cero, cuente como parada. Una UP del listado actual que aún no existía en el día
   medido no tiene P48 y no cuenta.
-- **Las UP híbridas no cuentan**, como en la serie: su P48 no separa la parte eólica.
+- **Las UP híbridas no cuentan**, como en la serie: su P48 no separa la parte eólica. Tampoco
+  están en `G_D`: según su descripción en el catálogo de e·sios, el 1485 se refiere a los
+  grupos con tipo de producción eólica, y la eólica hibridada tiene su propio tipo e
+  indicador (2273).
+- **`G_D` incluye el autoconsumo**, que no tiene P48. Esa potencia queda en el denominador
+  sin poder estar en el numerador, así que la cobertura sale por debajo de la real: del lado
+  prudente.
+- **`G_D` se revisa:** el 1485 se publica a diario con la información más actual disponible,
+  así que el valor de un día pasado puede cambiar. Se guarda con el instante en que se
+  recibió.
 
 ## Regla
 
