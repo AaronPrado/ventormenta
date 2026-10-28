@@ -99,9 +99,21 @@ La primera versión de la regla calibraba `T` con las dos direcciones juntas. Se
 de Galicia frente al resto **antes del cruce**, con datos solo de OpenStreetMap: con la
 primera, 33 de los 168 parques gallegos con nombre tenían algún parque de fuera por encima de
 `T`, casi siempre parques de una sola palabra genérica («El Monte», «La Peña»); con la
-segunda, 14. Entre los nombres distintos de un mismo parque en OpenStreetMap, que son
-coincidencias verdaderas, solo se dejan de reconocer dos que el listado no usa: una palabra de
-tipo en alemán y una errata.
+segunda, 14.
+
+Los nombres distintos de un mismo parque en OpenStreetMap son coincidencias verdaderas, y `T`
+reconoce 5 de sus 13 pares. De los 8 restantes:
+
+- 2 llevan una palabra que el listado no usa: una de tipo en alemán («windpark») y una errata
+  («eollica»);
+- 2 son la limitación de la medida descrita más abajo: una letra cambiada en un nombre corto;
+- 4 son nombres distintos que ningún parecido de caracteres reconoce: una traducción, una
+  sigla frente a su desarrollo, una variante castellana de un nombre gallego y dos topónimos
+  distintos.
+
+Como el parecido de una UF con un parque es el máximo entre los nombres del parque, uno de
+estos fallos solo pierde una UF si su descripción se parece únicamente al nombre que no se
+reconoce.
 
 **Limitación de la medida:** un nombre corto con una o dos letras cambiadas («Acebo» y
 «Acevo», «Soán» y «Xoán») no llega a `T` con ningún umbral razonable: en un nombre de cinco
