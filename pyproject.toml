@@ -10,7 +10,7 @@ dependencies = [
     "requests>=2.32",
     # Lector de los I90 en XLS. Versión exacta: una versión nueva puede cambiar el tipo con
     # que llegan las celdas (número, fecha, texto) y, con él, la lectura del P48.
-    "python-calamine==0.8.3",
+    "python-calamine==0.9.0",
 ]
 
 [build-system]
@@ -32,9 +32,9 @@ dev = [
     "prek>=0.5.5",
     "pytest>=9.1.1",
     "responses>=0.25",
-    "ruff==0.17.0",
+    "ruff==0.17.2",
     "types-requests>=2.32",
-    "zizmor==1.30.1",
+    "zizmor==1.31.1",
 ]
 
 [tool.uv]
