@@ -17,7 +17,7 @@ repos:
         args: [--fix=lf]
 
   - repo: https://github.com/betterleaks/betterleaks
-    rev: 81aff7a638638aae3a659845d089043e1d8fe9ac # frozen: v1.9.0
+    rev: 8d77e1712fb06fd14444cc648686f1d5655e28a8 # frozen: v1.10.0
     hooks:
       - id: betterleaks
         # Explícito: la v2 deja de descubrir la configuración del repo por su cuenta.
